@@ -13,7 +13,7 @@ Défauts relevés en lisant le code fourni. Le sujet interdit de modifier la log
 | **Arrêt lent** | Aucun gestionnaire de SIGTERM ; Node en processus 1 l'ignore | `docker stop` attend 10 s puis tue le processus | tini en processus 1 : arrêt en 0,3 s |
 | **Schéma non rejouable** | `CREATE TABLE` sans `IF NOT EXISTS` dans `init.sql` | Rejouer le script échoue | En local, exécuté seulement sur volume vide ; sur Neon, `deploy.sh` vérifie d'abord l'existence des tables |
 | **Inscription limitée à 5 par IP et par 15 minutes** | `registrationLimiter` | Des tests répétés finissent en 429 | Documenté ([conteneurisation](conteneurisation.md#problèmes-fréquents)) |
-| **Délai de connexion court** | `connectionTimeoutMillis: 2000` | Une base Neon en veille peut mettre plus longtemps à répondre au premier appel | À observer sur Azure |
+| **Délai de connexion court** | `connectionTimeoutMillis: 2000` | Une base Neon en veille met plus longtemps à répondre au premier appel | Mesuré sur Azure : 1,04 s au premier appel après 8 minutes d'inactivité, contre 0,2 s ensuite. Sous le délai de 2 s, aucun échec ([preuve](../../preuves/J5/README.md#mise-en-veille-de-neon)) |
 
 ## Exploitation
 

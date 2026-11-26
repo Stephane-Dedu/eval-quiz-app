@@ -19,6 +19,12 @@ name: CD
 on:
   push:
     branches: [main]
+    # Une fusion qui ne touche que la documentation ou les preuves ne change pas
+    # les images : rien à publier ni à déployer.
+    paths-ignore:
+      - "docs/**"
+      - "preuves/**"
+      - "**/*.md"
   workflow_dispatch:
 
 permissions:
