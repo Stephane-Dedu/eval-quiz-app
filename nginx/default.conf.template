@@ -4,16 +4,33 @@
 #
 # BACKEND_ORIGIN : adresse du backend vue depuis ce conteneur.
 #   - Docker Compose : http://backend:3007
-#   - Azure Container Apps : http://ca-quiz-backend (nom de l'application)
+#   - Azure Container Apps : https://ca-quiz-backend.internal.<domaine>
+#   L'en-tête Host envoyé au backend reste celui de BACKEND_ORIGIN (comportement
+#   par défaut de proxy_pass) : sur Container Apps, c'est ce nom qui permet au
+#   proxy de la plateforme de router la requête vers la bonne application.
 #
-# L'en-tête Host envoyé au backend reste celui de BACKEND_ORIGIN (comportement
-# par défaut de proxy_pass) : sur Container Apps, c'est ce nom qui permet au
-# proxy de la plateforme de router la requête vers la bonne application.
+# TRUSTED_PROXY_CIDR : d'où peut venir un proxy dont on croit X-Forwarded-For.
+#   - Docker Compose : 127.0.0.1/32, c'est-à-dire personne (rien devant Nginx)
+#   - Azure Container Apps : 0.0.0.0/0, car tout le trafic passe par le proxy
+#     de la plateforme, qui ajoute l'adresse réelle du client en dernier.
+
+# Schéma d'origine : celui annoncé par le proxy devant Nginx s'il existe
+# (HTTPS sur Container Apps), sinon celui de la connexion.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
 
 server {
     listen 8080;
     server_name _;
     server_tokens off;
+
+    # Adresse réelle du client : dernière entrée de X-Forwarded-For, ajoutée
+    # par le proxy de confiance (real_ip_recursive off).
+    set_real_ip_from ${TRUSTED_PROXY_CIDR};
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive off;
 
     root /usr/share/nginx/html;
 
@@ -51,21 +68,12 @@ server {
     # API relayée vers le backend
     location /api/ {
         proxy_pass ${BACKEND_ORIGIN};
-        proxy_http_version 1.1;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_hide_header X-Powered-By;
-        proxy_connect_timeout 5s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
+        include /etc/nginx/snippets/proxy.conf;
     }
 
     # Santé du backend, exposée via le frontend
     location = /health {
         proxy_pass ${BACKEND_ORIGIN};
-        proxy_http_version 1.1;
-        proxy_hide_header X-Powered-By;
+        include /etc/nginx/snippets/proxy.conf;
     }
 }

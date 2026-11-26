@@ -56,13 +56,13 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | Chaque PR exécute lint, build, scans Trivy et test d'intégration | Onglet Checks de la PR |
-| ☐ | Une vulnérabilité CRITICAL fait échouer le contrôle, sans `continue-on-error` | PR de test contrôlée, rejetée par la CI |
-| ☐ | Un second passage sans changement de dépendances réutilise le cache | Journal de build : étapes `CACHED` |
-| ☐ | Actions épinglées par SHA de commit, `permissions:` minimales | Lecture du workflow ; Dependabot met à jour les SHA |
-| ☐ | Une PR ne pousse aucune image et ne déploie rien | Aucune étape de connexion Azure dans les jobs de PR |
-| ☐ | Push direct sur `main` refusé, y compris pour l'administrateur | Preuve dans `preuves/J6/` |
-| ☐ | Fusion bloquée tant que les contrôles requis ne sont pas verts | Preuve dans `preuves/J6/` |
+| ✅ | Chaque PR exécute lint, build, scans Trivy et test d'intégration | Onglet Checks de la PR |
+| ✅ | Une vulnérabilité CRITICAL fait échouer le contrôle, sans `continue-on-error` | PR #7 : CVE-2019-10744 rejetée (`preuves/J6/`) |
+| ✅ | Un second passage sans changement de dépendances réutilise le cache | Journal de build : étapes `CACHED`, y compris après correction de `ARG REVISION` |
+| ✅ | Actions épinglées par SHA de commit, `permissions:` minimales | Lecture du workflow ; Dependabot met à jour les SHA |
+| ✅ | Une PR ne pousse aucune image et ne déploie rien | Aucune étape de connexion Azure dans les jobs de PR |
+| ✅ | Push direct sur `main` refusé, y compris pour l'administrateur | Preuve dans `preuves/J6/` |
+| ✅ | Fusion bloquée tant que les contrôles requis ne sont pas verts, même avec `--admin` | Preuve dans `preuves/J6/` |
 | ☐ | Connexion à Azure par OIDC, aucun secret applicatif dans GitHub | `gh secret list` vide ; seules des variables d'identifiants publics |
 | ☐ | Images publiées avec le tag du commit, SBOM et provenance | `az acr repository show-tags` ; attestations attachées |
 | ☐ | Chaque fusion crée une nouvelle révision des deux applications | `az containerapp revision list` |

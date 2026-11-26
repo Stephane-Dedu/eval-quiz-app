@@ -17,12 +17,6 @@ RUN --mount=type=cache,target=/root/.npm \
 # ---------------------------------------------------------------------------
 FROM node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS runtime
 
-ARG REVISION=inconnue
-LABEL org.opencontainers.image.title="quiz-backend" \
-      org.opencontainers.image.description="Quiz App : API Express" \
-      org.opencontainers.image.source="https://github.com/Stephane-Dedu/eval-quiz-app" \
-      org.opencontainers.image.revision="${REVISION}"
-
 # apk upgrade : correctifs Alpine publiés depuis la construction de l'image de base.
 # tini devient le processus 1 et transmet SIGTERM à Node, qui n'installe
 # aucun gestionnaire de signal : sans lui, l'arrêt attend 10 s puis SIGKILL.
@@ -42,6 +36,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json server.js ./
 
 USER 1000:1000
+
+# Métadonnées en dernier : REVISION (SHA du commit) change à chaque build, et
+# Docker invalide le cache du premier RUN qui suit un ARG modifié. Placé ici,
+# il ne touche que ces métadonnées.
+ARG REVISION=inconnue
+LABEL org.opencontainers.image.title="quiz-backend" \
+      org.opencontainers.image.description="Quiz App : API Express" \
+      org.opencontainers.image.source="https://github.com/Stephane-Dedu/eval-quiz-app" \
+      org.opencontainers.image.revision="${REVISION}"
 
 EXPOSE 3007
 

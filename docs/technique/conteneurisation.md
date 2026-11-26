@@ -37,10 +37,11 @@ Principes communs, avec la commande qui les vérifie dans [la liste de contrôle
 - **Multi-étapes.** On construit avec les outils, on n'exécute qu'avec le résultat. Le frontend n'embarque que les fichiers statiques produits par Vite ; le backend, que ses dépendances de production et `server.js`.
 - **Images de base épinglées par digest.** `node:26.13.1-alpine3.24@sha256:…` désigne une image précise et immuable, alors qu'un tag peut être republié. Le digest est celui de l'index multi-architecture : la même ligne fonctionne en arm64 (poste) et en amd64 (CI, Azure). Dependabot propose les mises à jour.
 - **Ordre des couches.** Ce qui change rarement d'abord (lockfile, `npm ci`), ce qui change souvent ensuite (code, puis fichiers de **Questions**). Modifier une **Question** ne reconstruit pas les dépendances.
+- **Métadonnées en fin d'étape.** `ARG REVISION` (le SHA du commit) change à chaque build, et Docker invalide le cache du premier `RUN` qui suit un `ARG` modifié. Déclaré avant `apk upgrade`, il le faisait rejouer à chaque commit en CI ; déclaré juste avant les `LABEL`, en fin d'étape, il ne touche plus que les métadonnées.
 - **Cache npm monté** (`RUN --mount=type=cache`) : même quand le lockfile change, les paquets déjà téléchargés ne le sont pas une seconde fois.
 - **`.dockerignore` en liste blanche.** Tout est exclu sauf les fichiers nommés : un `.env`, une preuve ou un nouveau dossier n'entre jamais par accident dans une image.
 - **Non-root, avec un uid numérique.** Un uid numérique permet à la plateforme de vérifier qu'il n'est pas 0 sans lire `/etc/passwd`.
-- **`apk upgrade` à la construction.** Il applique les correctifs Alpine parus depuis la publication de l'image de base. Contrepartie : deux constructions à des dates différentes peuvent différer. C'est pourquoi chaque image est tracée par le SHA du commit et scannée avant publication.
+- **`apk upgrade` à la construction.** Il applique les correctifs Alpine parus depuis la publication de l'image de base. Deux contreparties : deux constructions à des dates différentes peuvent différer (d'où le tag par SHA de commit et le scan avant publication) ; et tant que la couche est en cache, elle n'est pas rejouée. Elle l'est dès que l'image de base change, ce que Dependabot propose chaque semaine, et Trivy signale à chaque PR toute CVE parue entre-temps.
 - **Contrôle de santé dans l'image** (`HEALTHCHECK`) : Compose l'utilise pour ordonner les démarrages. Azure Container Apps l'ignore et utilise ses propres sondes.
 
 Particularités :
