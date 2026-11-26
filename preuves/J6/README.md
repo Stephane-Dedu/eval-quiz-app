@@ -102,3 +102,90 @@ Une première version du test (image d'exécution repassée sur `node:20`) a ét
 ### Limite : aucune approbation requise
 
 Le dépôt n'a qu'un contributeur et GitHub interdit à l'auteur d'une PR de l'approuver : exiger une approbation bloquerait toute fusion. Conformément à `docs/04`, la règle n'est pas prétendue active : `required_approving_review_count` vaut 0, et passe à 1 dès qu'un second membre a les droits.
+
+## J6-B : déploiement après fusion
+
+Workflow [`cd.yml`](../../.github/workflows/cd.yml), déclenché par chaque push sur `main`. Étapes : approbation sur l'environnement `production`, rebuild, second scan Trivy, connexion OIDC, publication, nouvelles révisions, vérification ([CI/CD](../../docs/technique/ci-cd.md#cd--githubworkflowscdyml)).
+
+### Premier passage : connexion OIDC refusée
+
+[Run 45811954132](https://github.com/Stephane-Dedu/eval-quiz-app/actions/runs/45811954132), fusion de la [PR #10](https://github.com/Stephane-Dedu/eval-quiz-app/pull/10). Le build et les scans ont réussi, puis la connexion à Azure a échoué :
+
+```text
+AADSTS700213: No matching federated identity record found for presented assertion subject 'repo:Stephane-Dedu@105072484/eval-quiz-app@1472861267:environment:production'. Check your federated identity credential Subject, Audience and Issuer against the
+```
+
+GitHub signe les jetons de ce dépôt avec un sujet qui contient les identifiants immuables du compte et du dépôt. L'identifiant fédéré attendait le format classique `repo:Stephane-Dedu/eval-quiz-app:…`. Correctif dans la [PR #11](https://github.com/Stephane-Dedu/eval-quiz-app/pull/11). Rien n'a été publié ni déployé : la connexion précède la publication.
+
+### Passage réussi, après approbation
+
+[Run 45822217087](https://github.com/Stephane-Dedu/eval-quiz-app/actions/runs/45822217087), fusion de la PR #11, commit `3f5ab0d0e960081f74ca10d4b113621699b6223b`.
+
+| Événement | Heure (UTC) |
+| --- | --- |
+| Push sur `main` (fusion) | 12:42:48 |
+| Approbation de l'environnement `production` par Stephane-Dedu | avant 12:45:11 |
+| Début du job | 12:45:11 |
+| Fin, succès | 12:47:37 |
+
+```console
+$ gh api repos/Stephane-Dedu/eval-quiz-app/actions/runs/45822217087/approvals --jq '.[] | "\(.user.login) \(.state) \(.environments[].name)"'
+Stephane-Dedu approved production
+```
+
+Étapes du job `Publier et déployer` :
+
+```text
+success  Run actions/checkout
+success  Run docker/setup-buildx-action
+success  Build backend
+success  Build frontend
+success  Trivy backend (CRITICAL bloque)
+success  Trivy backend (HIGH corrigeable bloque)
+success  Trivy frontend (CRITICAL bloque)
+success  Trivy frontend (HIGH corrigeable bloque)
+success  Connexion à Azure (OIDC)
+success  Connexion au registre
+success  Publication backend (SBOM, provenance)
+success  Publication frontend (SBOM, provenance)
+success  Révisions avant déploiement
+success  Nouvelle révision du backend
+success  Nouvelle révision du frontend
+success  Vérification
+```
+
+Images publiées avec le SHA du commit de fusion (extrait du journal) :
+
+```text
+pushing manifest for crquizsdedu.azurecr.io/quiz-backend:3f5ab0d0e960081f74ca10d4b113621699b6223b@sha256:ccb77503408476fea98945a95d6b2e111db25e3bcf4044b0a4ca25c95b1f8048
+pushing manifest for crquizsdedu.azurecr.io/quiz-frontend:3f5ab0d0e960081f74ca10d4b113621699b6223b@sha256:63a6a1a3b596e03ec96840ea43ad5276088872567794c7efb85c2fe3d3c7f522
+```
+
+```console
+$ az acr repository show-tags -n crquizsdedu --repository quiz-backend
+3f5ab0d0e960081f74ca10d4b113621699b6223b
+4eaf1123785bfb715c2e21cd91250f126ce4501c
+$ az acr repository show-tags -n crquizsdedu --repository quiz-frontend
+3f5ab0d0e960081f74ca10d4b113621699b6223b
+4eaf1123785bfb715c2e21cd91250f126ce4501c
+```
+
+Révisions avant et après, telles que le job les a affichées dans son résumé :
+
+```text
+Avant
+Revision                  Active    Image
+ca-quiz-backend--91t601e  True      crquizsdedu.azurecr.io/quiz-backend:4eaf1123785bfb715c2e21cd91250f126ce4501c
+Revision                   Active    Image
+ca-quiz-frontend--2le2jer  True      crquizsdedu.azurecr.io/quiz-frontend:4eaf1123785bfb715c2e21cd91250f126ce4501c
+Après
+Revision                  Active    Image
+ca-quiz-backend--91t601e  True      crquizsdedu.azurecr.io/quiz-backend:4eaf1123785bfb715c2e21cd91250f126ce4501c
+ca-quiz-backend--0000001  True      crquizsdedu.azurecr.io/quiz-backend:3f5ab0d0e960081f74ca10d4b113621699b6223b
+Revision                   Active    Image
+ca-quiz-frontend--2le2jer  True      crquizsdedu.azurecr.io/quiz-frontend:4eaf1123785bfb715c2e21cd91250f126ce4501c
+ca-quiz-frontend--0000001  True      crquizsdedu.azurecr.io/quiz-frontend:3f5ab0d0e960081f74ca10d4b113621699b6223b
+GET https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io/health → 200
+```
+
+Chaque fusion crée une nouvelle révision de chacune des deux applications (`--0000001`), sur l'image taguée par le commit de fusion. Juste après la mise à jour, l'ancienne et la nouvelle révision apparaissent toutes deux actives, le temps de la bascule. En mode révision unique, l'ancienne est ensuite désactivée : seule la plus récente reste active ([J4](../J4/README.md#révisions)).

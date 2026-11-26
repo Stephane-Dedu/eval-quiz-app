@@ -36,6 +36,6 @@ Chaque étape est une PR courte depuis une branche `feature/*` vers `main`, fusi
 
 - **Messages de commit** au format Conventional Commits, en français : `feat(docker): …`, `ci: …`, `docs: …`.
 - **Tags d'image** : le SHA complet du commit, jamais `latest` seul.
-- **Région Azure** : `germanywestcentral`.
+- **Régions Azure** : `germanywestcentral` pour le groupe, le registre, les identités et les journaux ; `belgiumcentral` pour l'environnement Container Apps et les applications ([ADR 0005](../adr/0005-environnement-workload-profiles.md)).
 - **Noms Azure** : abréviations du Cloud Adoption Framework (`rg-quiz-gwc`, `crquizsdedu`, `cae-quiz`, `ca-quiz-frontend`, `ca-quiz-backend`, `log-quiz`, `id-quiz-github`) ; la variante Terraform ajoute `-tf`.
 - **Secrets** : jamais dans le dépôt, les journaux ou les captures. En local dans `.env` (ignoré par git), sur Azure en secrets Container Apps.

@@ -9,9 +9,9 @@ flowchart LR
     browser["Navigateur"]
     github["GitHub Actions<br/>(CD, environnement production)"]
 
-    subgraph azure["Azure — groupe rg-quiz-gwc (germanywestcentral)"]
+    subgraph azure["Azure — groupe rg-quiz-gwc"]
         acr[("crquizsdedu<br/>Container Registry")]
-        subgraph cae["Environnement Container Apps cae-quiz"]
+        subgraph cae["Environnement Container Apps cae-quiz (belgiumcentral)"]
             frontend["ca-quiz-frontend<br/>Nginx · ingress externe HTTPS"]
             backend["ca-quiz-backend<br/>Express · ingress interne"]
         end
@@ -35,13 +35,13 @@ flowchart LR
 
 | Ressource | Nom | Réglage | Pourquoi |
 | --- | --- | --- | --- |
-| Groupe de ressources | `rg-quiz-gwc` | `germanywestcentral` | Une des 5 régions autorisées par l'abonnement Azure for Students, dans la même ville que la base Neon (Francfort) |
+| Groupe de ressources | `rg-quiz-gwc` | `germanywestcentral` (groupe, registre, identités, journaux) | Une des 5 régions autorisées par l'abonnement Azure for Students, dans la même ville que la base Neon (Francfort) |
 | Budget | `budget-quiz` | 10 par mois, alertes à 50, 80 et 100 % | Un oubli ne consomme pas le crédit étudiant en silence |
 | Log Analytics | `log-quiz` | Rétention 30 jours | Journaux des conteneurs consultables après coup ; 30 jours est le minimum, inclus sans surcoût |
 | Container Registry | `crquizsdedu` | SKU Basic, compte administrateur désactivé | Moins cher ; aucun mot de passe partagé, l'accès passe par des identités |
 | Identité de tirage | `id-quiz-pull` | `AcrPull` sur le registre | Les applications ne peuvent que lire les images |
 | Identité du CD | `id-quiz-github` | `AcrPush` sur le registre, `Container Apps Contributor` sur le groupe, `Managed Identity Operator` sur `id-quiz-pull` | Publier des images et créer des révisions, rien d'autre ; le dernier rôle est exigé par Azure pour mettre à jour une application qui utilise `id-quiz-pull` |
-| Environnement | `cae-quiz` | Mode WorkloadProfiles (profil Consommation), chiffrement entre applications, journaux vers `log-quiz` | Facturation à l'usage, zéro réplica possible ; découverte de services interne (voir [ADR 0005](../adr/0005-environnement-workload-profiles.md)) |
+| Environnement | `cae-quiz` | `belgiumcentral`, mode WorkloadProfiles (profil Consommation), chiffrement entre applications, journaux vers `log-quiz` | Facturation à l'usage, zéro réplica possible ; découverte de services interne (voir [ADR 0005](../adr/0005-environnement-workload-profiles.md)) |
 | Application backend | `ca-quiz-backend` | 0,25 vCPU, 0,5 Gio, ingress **interne** sur 3007 | Injoignable depuis Internet |
 | Application frontend | `ca-quiz-frontend` | 0,25 vCPU, 0,5 Gio, ingress **externe** HTTPS sur 8080 | Seule porte d'entrée ; HTTP redirigé vers HTTPS |
 
