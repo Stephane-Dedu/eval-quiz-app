@@ -9,9 +9,10 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
 | ☐ | Aucune modification de logique métier, hormis la **Question** de démonstration | `git diff upstream/main -- backend/server.js main.js public/admin.js database/init.sql` est vide |
-| ☐ | Les dépendances s'installent de façon reproductible | `npm ci` réussit à la racine et dans `backend/` (lockfiles versionnés) |
-| ☐ | Aucun fichier mort ni doublon | Plus de `database/nginx/`, de `*.svg.old` ni d'image non référencée |
-| ☐ | Analyse J1 rédigée | `docs/technique/analyse-j1.md` |
+| ✅ | Les dépendances s'installent de façon reproductible | `npm ci` réussit à la racine et dans `backend/` (lockfiles versionnés) |
+| ✅ | Aucun fichier mort ni doublon | Plus de `database/nginx/`, de `*.svg.old` ni d'image non référencée |
+| ✅ | Analyse J1 rédigée | `docs/technique/analyse-j1.md` |
+| ✅ | Aucune vulnérabilité connue dans les dépendances | `npm audit` (racine) et `npm audit --omit=dev` (`backend/`) : 0 |
 
 ## Dockerfile
 
