@@ -36,21 +36,21 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | ✅ | Arrêt propre en moins de 2 secondes | `time docker stop <conteneur>` |
 | ✅ | Système de fichiers racine en lecture seule | `read_only: true` et le service reste sain |
 | ✅ | Aucune capacité Linux, aucune élévation de privilèges | `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]` |
-| ☐ | Journaux sur la sortie standard | `docker compose logs <service>` les affiche |
-| ☐ | Ressources limitées | Limites CPU et mémoire déclarées par service |
+| ✅ | Journaux sur la sortie standard | `docker compose logs <service>` les affiche |
+| ✅ | Ressources limitées | Limites CPU et mémoire déclarées par service |
 
 ## Compose
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | Démarrage depuis un clone vierge | `cp .env.example .env && docker compose up -d --wait` : les trois services sont `healthy` |
-| ☐ | Ordre de démarrage par contrôles de santé | `depends_on` avec `condition: service_healthy` |
-| ☐ | Seul le frontend publie un port | `docker compose ps` : seul `8087` est publié |
-| ☐ | Le frontend ne peut pas joindre la base | Connexion à `db:5432` depuis le conteneur frontend refusée (réseaux séparés) |
-| ☐ | Les données survivent à la recréation des conteneurs | `down` puis `up` sans `-v` : le **Participant** et le **Résultat** sont toujours là |
-| ☐ | Le schéma n'est appliqué qu'à la première création du volume | Journal PostgreSQL au second démarrage : aucune exécution de `init.sql` |
-| ☐ | Aucun secret dans le fichier Compose | Toutes les valeurs sensibles viennent de `.env`, ignoré par git |
-| ☐ | Test d'intégration au vert | `scripts/smoke-test.sh` |
+| ✅ | Démarrage depuis un clone vierge | `cp .env.example .env && docker compose up -d --wait` : les trois services sont `healthy` |
+| ✅ | Ordre de démarrage par contrôles de santé | `depends_on` avec `condition: service_healthy` |
+| ✅ | Seul le frontend publie un port | `docker compose ps` : seul `8087` est publié |
+| ✅ | Le frontend ne peut pas joindre la base | Connexion à `db:5432` depuis le conteneur frontend refusée (réseaux séparés) |
+| ✅ | Les données survivent à la recréation des conteneurs | `down` puis `up` sans `-v` : le **Participant** et le **Résultat** sont toujours là |
+| ✅ | Le schéma n'est appliqué qu'à la première création du volume | Journal PostgreSQL au second démarrage : aucune exécution de `init.sql` |
+| ✅ | Aucun secret dans le fichier Compose | Toutes les valeurs sensibles viennent de `.env`, ignoré par git |
+| ✅ | Test d'intégration au vert | `scripts/smoke-test.sh` |
 
 ## CI/CD
 

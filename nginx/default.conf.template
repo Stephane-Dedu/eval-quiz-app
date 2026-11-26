@@ -13,17 +13,38 @@
 server {
     listen 8080;
     server_name _;
+    server_tokens off;
 
     root /usr/share/nginx/html;
 
-    # Application principale
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/json image/svg+xml text/plain;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # Fichiers produits par Vite : leur nom contient un hash du contenu, donc
+    # ils peuvent rester en cache un an sans risque de servir une vieille version.
+    location /assets/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Pages et fichiers non hachés : toujours revalidés, pour qu'un déploiement
+    # (par exemple une Question modifiée) soit visible immédiatement.
     location / {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
         index index.html;
         try_files $uri $uri/ /index.html;
     }
 
     # Page d'administration
     location = /gestion-quiz {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
         try_files /gestion-quiz.html =404;
     }
 
@@ -35,6 +56,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
+        proxy_hide_header X-Powered-By;
         proxy_connect_timeout 5s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
@@ -44,5 +66,6 @@ server {
     location = /health {
         proxy_pass ${BACKEND_ORIGIN};
         proxy_http_version 1.1;
+        proxy_hide_header X-Powered-By;
     }
 }

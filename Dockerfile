@@ -43,6 +43,7 @@ USER 0
 RUN apk upgrade --no-cache
 USER 101
 
+COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 
