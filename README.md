@@ -1,51 +1,100 @@
-# Quiz App - Projet d'évaluation Conteneurisation
+# Quiz App — conteneurisation, sécurité et déploiement sur Azure
 
-## Mission
+[![CI](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/ci.yml)
+[![CD](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/cd.yml/badge.svg)](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/cd.yml)
 
-Vous intégrez une équipe DevOps chargée de **conteneuriser, sécuriser et déployer** l'application **Quiz App** sur Microsoft Azure, puis d'automatiser ses livraisons.
+Évaluation du cours Conteneurs : l'application de quiz fournie est conteneurisée, sécurisée, orchestrée avec Docker Compose, déployée sur Azure Container Apps avec Azure CLI, puis livrée automatiquement par GitHub Actions. Le code applicatif n'est pas modifié ([ADR 0002](docs/adr/0002-code-applicatif-fige.md)).
 
-Le **code applicatif est fourni**. Votre mission concerne la conteneurisation, l'exploitation, la sécurité et le déploiement ; **ne modifiez pas la logique métier**. Une modification ciblée d'une question de quiz présente dans le code servira à démontrer le processus de livraison.
+Le sujet du formateur est dans [`docs/00-sujet.md`](docs/00-sujet.md) et [`docs/01`](docs/01-presentation-projet.md) à [`docs/09`](docs/09-utilisation-ia.md).
 
-L'application comporte un frontend, un backend et une base PostgreSQL. Elle peut utiliser un service d'envoi d'emails ; les fonctionnalités qui en dépendent doivent être configurées uniquement si les accès nécessaires sont fournis.
+## Architecture
 
-## Résultat attendu
+```mermaid
+flowchart LR
+    subgraph local["En local — Docker Compose"]
+        direction LR
+        lb["localhost:8087"] --> lf["frontend<br/>Nginx"] --> lback["backend<br/>Express"] --> ldb[("db<br/>PostgreSQL + volume")]
+    end
+    subgraph cloud["Sur Azure"]
+        direction LR
+        cb["HTTPS"] --> cf["ca-quiz-frontend<br/>ingress externe"] --> cback["ca-quiz-backend<br/>ingress interne"] -- "TLS" --> neon[("Neon<br/>PostgreSQL")]
+        acr[("ACR")] -. "identité managée" .-> cf & cback
+    end
+    gh["GitHub Actions"] -- "OIDC" --> acr
+```
 
-1. Faire fonctionner Quiz App localement avec Docker, Docker Compose et PostgreSQL persistant.
-2. Construire des images sécurisées, analyser les vulnérabilités et documenter les corrections.
-3. Déployer les images via Azure Container Registry (ACR) sur Azure Container Apps avec Azure CLI.
-4. Connecter le backend à un PostgreSQL externe (Neon recommandé, ou solution compatible).
-5. Mettre en place une CI/CD avec **GitHub Actions (recommandé)** ou **GitLab CI/CD (autorisé)** : contrôles sur Pull/Merge Request, scan Trivy bloquant, puis publication et déploiement après fusion dans `main`.
-6. Présenter le travail et les preuves de chaque jalon lors d'une soutenance.
+Détail : [architecture locale](docs/technique/analyse-j1.md#6-architecture-locale), [architecture Azure](docs/technique/azure.md#architecture).
 
-Les jalons sont validés progressivement. Une difficulté sur PostgreSQL cloud n'annule pas les jalons déjà acquis et n'interdit pas de démontrer la partie CI/CD technique.
+## Lancer en local
 
-## Travail à partir du dépôt officiel
+Prérequis : Docker avec Compose v2.
 
-Le formateur publie le code de départ et les consignes sur la branche `main` de son dépôt **de référence**. **Chaque groupe crée un fork de ce dépôt sur GitHub**, puis travaille exclusivement dans son fork. Les branches `feature/*` et les Pull Requests doivent cibler **`main` du fork du groupe**, jamais `main` du formateur.
+```console
+$ cp .env.example .env
+$ docker compose up -d --build --wait
+$ ./scripts/smoke-test.sh
+```
 
-- Sur GitHub : faites un fork **par groupe**, activez GitHub Actions si nécessaire et configurez vos propres secrets et autorisations Azure. Les secrets du dépôt d’origine ne sont pas transmis au fork.
-- Sur GitLab (alternative admise) : créez un projet de groupe à partir du code de départ et utilisez des **Merge Requests dirigées vers `main` de votre projet**, pas vers le dépôt officiel.
-- Aucun accès en écriture au dépôt du formateur n’est nécessaire. Transmettez au formateur l’URL de votre dépôt de groupe.
+L'application est sur http://localhost:8087 et l'administration sur http://localhost:8087/gestion-quiz. `docker compose down` arrête tout en gardant les données ; `docker compose down -v` les efface. Détails : [conteneurisation](docs/technique/conteneurisation.md).
 
-## Commencer
+## Déployer sur Azure
 
-Lisez les documents dans cet ordre :
+Prérequis : Azure CLI connecté (`az login`), Docker avec buildx, `jq`, `openssl`, et `trivy` pour scanner avant publication.
 
-- [Présentation du projet](docs/01-presentation-projet.md)
-- [Consignes techniques](docs/02-consignes-techniques.md)
-- [Jalons et validations](docs/03-jalons-validation.md)
-- [Exigences CI/CD](docs/04-pipeline-cicd.md)
-- [Fonctionnalités avancées](docs/05-bonus-azure.md)
-- [Soutenance et livrables](docs/06-soutenance-livrables.md)
-- [Ressources officielles](docs/07-ressources.md)
-- [Documentation technique de Quiz App : ports, API et configuration](docs/08-documentation-technique.md)
-- [Utilisation responsable de l’IA](docs/09-utilisation-ia.md)
+```console
+$ export ADMIN_PASSWORD='…' JWT_SECRET="$(openssl rand -hex 32)"
+$ export DATABASE_URL='postgresql://…?sslmode=verify-full'   # base Neon
+$ ./scripts/deploy.sh
+```
 
-**Important :** les comptes Azure for Students peuvent être limités par les crédits, quotas, régions et autorisations. Vérifiez les possibilités de votre abonnement avant de créer des ressources payantes. Supprimez les ressources inutilisées après sauvegarde des preuves et accord du formateur.
+Le script est rejouable : une seconde exécution ne recrée rien. Il affiche à la fin l'URL de l'application.
 
-## Règles générales
+**Nettoyage.** `./scripts/destroy.sh` supprime toutes les ressources après confirmation. Le sujet demande de ne le faire qu'après avoir sauvegardé les preuves et obtenu l'accord du formateur.
 
-- Travail en groupe ; déposez le lien de votre dépôt et les preuves demandées au formateur.
-- Versionnez les fichiers de configuration, les scripts et les workflows **que vous produisez**.
-- Ne commitez jamais de mots de passe, URL PostgreSQL contenant des identifiants, clés API, secrets GitHub/GitLab ou fichiers `.env` réels.
-- Une démonstration validée reste acquise même si les ressources cloud sont supprimées ensuite.
+Détails : [déploiement Azure](docs/technique/azure.md).
+
+## Livraison continue
+
+1. Une modification part d'une branche `feature/*` et arrive sur `main` par une Pull Request.
+2. La CI construit les trois images, les scanne avec Trivy, rejoue les lints et lance le test d'intégration. Toute vulnérabilité CRITICAL bloque la fusion, y compris pour l'administrateur.
+3. Après la fusion, le CD reconstruit et rescanne les images, attend une approbation sur l'environnement `production`, publie dans Azure Container Registry, puis crée une nouvelle révision des deux Container Apps.
+
+Détails : [CI/CD](docs/technique/ci-cd.md).
+
+## Jalons et preuves
+
+| Jalon | Contenu | Preuves |
+| --- | --- | --- |
+| J0 | Accès à l'abonnement Azure | [`preuves/J0`](preuves/J0/) |
+| J1 | Conteneurisation locale, persistance, réseau | [`preuves/J1`](preuves/J1/), [analyse](docs/technique/analyse-j1.md) |
+| J2 | Scans Trivy avant/après, corrections | [`preuves/J2`](preuves/J2/) |
+| J3 | Ressources Azure créées par Azure CLI, images dans ACR | [`preuves/J3`](preuves/J3/) |
+| J4 | Container Apps, ingress, révisions, `/health` | [`preuves/J4`](preuves/J4/) |
+| J5 | PostgreSQL Neon chiffré, persistance | [`preuves/J5`](preuves/J5/) |
+| J6 | Contrôles avant fusion, déploiement après fusion | [`preuves/J6`](preuves/J6/) |
+
+Pull Requests : [toutes](https://github.com/Stephane-Dedu/eval-quiz-app/pulls?q=is%3Apr). Exécutions : [CI](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/ci.yml), [CD](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/cd.yml).
+
+## Documentation
+
+| Document | Contenu |
+| --- | --- |
+| [Documentation technique](docs/technique/README.md) | Index, feuille de route, conventions |
+| [Listes de contrôle](docs/technique/checklists.md) | Critères vérifiables par volet |
+| [Problèmes connus](docs/technique/problemes-connus.md) | Défauts du code fourni et leur traitement |
+| [Décisions d'architecture](docs/adr/) | Choix structurants et leurs raisons |
+| [Vocabulaire](GLOSSARY.md) | Termes du domaine |
+
+## Usage de l'IA
+
+- **Outil :** Claude Code (Anthropic), assistant en ligne de commande.
+- **Tâches assistées :**
+  - relecture du code fourni et repérage de ses défauts ;
+  - premières versions des Dockerfiles, du fichier Compose, des scripts Azure CLI et des workflows ;
+  - recherche dans la documentation Azure (mode Express des environnements Container Apps, quotas Azure for Students) ;
+  - rédaction de la documentation.
+- **Vérification des propositions :**
+  - chaque fichier est passé par les outils de contrôle : hadolint, shellcheck, actionlint, `docker compose config`, Trivy ;
+  - tout a été exécuté réellement : builds, test d'intégration, parcours navigateur automatisé, déploiements Azure, passages de CI et de CD ;
+  - les écarts constatés ont été diagnostiqués et corrigés à partir des journaux. Exemples : le cache invalidé par `ARG REVISION`, l'environnement Express qui empêchait le frontend de joindre le backend, l'adresse client faussée par les proxys.
+- **Secrets :** aucun secret réel n'est communiqué à l'assistant. Ils sont générés et conservés localement, puis lus depuis l'environnement par les scripts.
