@@ -1,0 +1,12 @@
+# Copier en terraform.tfvars (ignoré par git) et remplir.
+
+subscription_id = "00000000-0000-0000-0000-000000000000"
+budget_email    = "vous@example.com"
+
+# Secrets : jamais dans le dépôt.
+admin_password = "à-remplacer-12-caractères-minimum"
+jwt_secret     = "à-remplacer-par-openssl-rand-hex-32-soit-64-caracteres"
+# database_url = "postgresql://utilisateur:mot-de-passe@hote/base?sslmode=verify-full"
+
+# Région libre pour l'environnement (un seul par abonnement Azure for Students).
+environment_location = "austriaeast"
