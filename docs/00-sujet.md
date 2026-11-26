@@ -1,3 +1,5 @@
+> README d'origine du sujet, déplacé ici depuis la racine du dépôt. Seuls les chemins des liens ont été adaptés à ce nouvel emplacement.
+
 # Quiz App - Projet d'évaluation Conteneurisation
 
 ## Mission
@@ -31,15 +33,15 @@ Le formateur publie le code de départ et les consignes sur la branche `main` de
 
 Lisez les documents dans cet ordre :
 
-- [Présentation du projet](docs/01-presentation-projet.md)
-- [Consignes techniques](docs/02-consignes-techniques.md)
-- [Jalons et validations](docs/03-jalons-validation.md)
-- [Exigences CI/CD](docs/04-pipeline-cicd.md)
-- [Fonctionnalités avancées](docs/05-bonus-azure.md)
-- [Soutenance et livrables](docs/06-soutenance-livrables.md)
-- [Ressources officielles](docs/07-ressources.md)
-- [Documentation technique de Quiz App : ports, API et configuration](docs/08-documentation-technique.md)
-- [Utilisation responsable de l’IA](docs/09-utilisation-ia.md)
+- [Présentation du projet](01-presentation-projet.md)
+- [Consignes techniques](02-consignes-techniques.md)
+- [Jalons et validations](03-jalons-validation.md)
+- [Exigences CI/CD](04-pipeline-cicd.md)
+- [Fonctionnalités avancées](05-bonus-azure.md)
+- [Soutenance et livrables](06-soutenance-livrables.md)
+- [Ressources officielles](07-ressources.md)
+- [Documentation technique de Quiz App : ports, API et configuration](08-documentation-technique.md)
+- [Utilisation responsable de l’IA](09-utilisation-ia.md)
 
 **Important :** les comptes Azure for Students peuvent être limités par les crédits, quotas, régions et autorisations. Vérifiez les possibilités de votre abonnement avant de créer des ressources payantes. Supprimez les ressources inutilisées après sauvegarde des preuves et accord du formateur.
 

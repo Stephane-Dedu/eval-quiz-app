@@ -27,7 +27,7 @@ if [[ $(az group exists -n "$RESOURCE_GROUP") != true ]]; then
 fi
 
 echo "Ressources du groupe $RESOURCE_GROUP :"
-az resource list -g "$RESOURCE_GROUP" --query "[].{type:type, nom:name}" -o table
+az resource list -g "$RESOURCE_GROUP" --query "[].{nom:name, ressource:type}" -o table
 
 if [[ ${1:-} != --yes ]]; then
   read -r -p $'\nRetapez le nom du groupe pour tout supprimer : ' answer

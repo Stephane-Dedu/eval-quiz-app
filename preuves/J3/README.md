@@ -72,7 +72,7 @@ df88c2cab964e4392f0288588ff8b0516dd52a65
 | `3f5ab0d…` | CD, fusion de la [PR #11](https://github.com/Stephane-Dedu/eval-quiz-app/pull/11) |
 | `05780a4…` | CD, fusion de la [PR #12](https://github.com/Stephane-Dedu/eval-quiz-app/pull/12) |
 | `1d38574…` | CD, fusion de la [PR #13](https://github.com/Stephane-Dedu/eval-quiz-app/pull/13) (Question modifiée) |
-| `df88c2c…` | CD, fusion de la [PR #14](https://github.com/Stephane-Dedu/eval-quiz-app/pull/14), en production |
+| `df88c2c…` | CD, fusion de la [PR #14](https://github.com/Stephane-Dedu/eval-quiz-app/pull/14), dernière image au moment de la capture (13:30 UTC) |
 
 ## Un second passage ne change rien, et ne revient jamais en arrière
 
@@ -146,4 +146,38 @@ Aucune image construite, aucune image remplacée, aucune révision créée.
 
 ## Destruction
 
-`./scripts/destroy.sh` liste les ressources du groupe, demande de retaper son nom, supprime le budget puis le groupe entier. Le cycle complet `destroy.sh` puis `deploy.sh` est réservé à la fin du projet, comme le demande le sujet. Après la suppression d'un environnement, Azure for Students bloque la création d'un nouvel environnement pendant plusieurs dizaines de minutes : l'application serait indisponible tout ce temps.
+`./scripts/destroy.sh` liste les ressources du groupe, demande de retaper son nom, supprime le budget puis le groupe entier.
+
+**Test réel, sur un groupe jetable** (`rg-quiz-test-destroy`, avec une identité managée, gratuite) : une mauvaise confirmation ne supprime rien, la bonne supprime tout.
+
+```console
+$ az group create -n rg-quiz-test-destroy -l germanywestcentral --tags projet=quiz-app gestion=test-destroy
+rg-quiz-test-destroy	Succeeded
+$ az identity create -g rg-quiz-test-destroy -n id-test-destroy
+id-test-destroy
+
+$ echo mauvais-nom | RESOURCE_GROUP=rg-quiz-test-destroy ./scripts/destroy.sh      # mauvaise confirmation
+Ressources du groupe rg-quiz-test-destroy :
+Nom
+---------------
+id-test-destroy
+✗ Confirmation incorrecte : rien n'a été supprimé.
+code de sortie : 1
+$ az group exists -n rg-quiz-test-destroy
+true
+
+$ echo rg-quiz-test-destroy | RESOURCE_GROUP=rg-quiz-test-destroy ./scripts/destroy.sh      # bonne confirmation
+Ressources du groupe rg-quiz-test-destroy :
+Nom
+---------------
+id-test-destroy
+Suppression de rg-quiz-test-destroy (quelques minutes)…
+✅ rg-quiz-test-destroy supprimé.
+code de sortie : 0
+$ az group exists -n rg-quiz-test-destroy
+false
+```
+
+Le script lit le nom de groupe dans `RESOURCE_GROUP` ; par défaut, `rg-quiz-gwc`. Ce test a aussi révélé un défaut d'affichage, corrigé : la colonne du type de ressource n'apparaissait pas dans la liste.
+
+**Cycle complet sur le déploiement évalué : après la soutenance.** Ses deux moitiés sont prouvées séparément : `deploy.sh` depuis zéro au premier déploiement (ci-dessus et [J4](../J4/README.md)), `destroy.sh` sur le groupe jetable. Les enchaîner sur le déploiement évalué le rendrait indisponible une à deux heures : Azure for Students n'autorise qu'un environnement par abonnement, et bloque une région plusieurs dizaines de minutes après une suppression. Le sujet prévoit de supprimer les ressources après la soutenance, avec l'accord du formateur : le cycle complet sera fait à ce moment-là.

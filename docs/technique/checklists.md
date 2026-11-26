@@ -73,7 +73,7 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | --- | --- | --- |
 | ✅ | `deploy.sh` crée tout depuis zéro | Exécution sur un abonnement sans groupe de ressources |
 | ✅ | `deploy.sh` est rejouable | Seconde exécution : aucune ressource recréée, code de sortie 0 |
-| ☐ | `destroy.sh` supprime tout, puis `deploy.sh` refonctionne | Cycle complet documenté |
+| ✅ | `destroy.sh` supprime tout, puis `deploy.sh` refonctionne | `deploy.sh` depuis zéro (premier déploiement) et `destroy.sh` sur un groupe jetable, prouvés séparément ([J3](../../preuves/J3/README.md#destruction)) ; cycle complet sur le déploiement évalué après la soutenance |
 | ✅ | Scripts sûrs | shellcheck propre ; `set -euo pipefail` ; refus de s'exécuter sans les variables requises |
 | ✅ | Compte administrateur du registre désactivé ; tirage par identité managée | `az acr show --query adminUserEnabled` = `false` |
 | ✅ | Backend injoignable depuis Internet | Ingress interne ; `curl` de son nom public renvoie la page 404 de la plateforme |
@@ -91,7 +91,7 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | --- | --- | --- |
 | ✅ | `fmt`, `validate`, `tflint` et Trivy propres en CI | Onglet Checks de la PR |
 | ✅ | Versions de Terraform et des fournisseurs épinglées, lock file versionné | `.terraform.lock.hcl` présent |
-| ☐ | `apply` depuis zéro dans un groupe de ressources dédié, puis `destroy` complet | Preuve dans `preuves/terraform/` |
+| ☐ | `apply` depuis zéro dans un groupe de ressources dédié, puis `destroy` complet | `plan` réel : 14 ressources ([preuve](../../preuves/terraform/README.md)) ; `apply` puis `destroy` après la soutenance (un seul environnement par abonnement) |
 | ✅ | Aucun secret versionné ; variables sensibles marquées `sensitive` | Lecture du code |
 | ✅ | Correspondance avec `deploy.sh` | Tableau commande `az` ↔ ressource Terraform dans `infra/terraform/README.md` |
 | ✅ | Graphe des dépendances généré | `infra/terraform/graphe.sh` → `graphe.svg` |
