@@ -11,4 +11,4 @@
 !style.css
 !questions_*.js
 !public/
-!nginx/default.conf.template
+!nginx/

@@ -1,0 +1,87 @@
+# Quiz App en local : frontend (Nginx), backend (Express), base (PostgreSQL).
+#
+#   cp .env.example .env
+#   docker compose up -d --build --wait
+#   ./scripts/smoke-test.sh
+#
+# Seul le frontend publie un port. La base est sur un réseau interne, que
+# seul le backend rejoint : le frontend ne peut pas l'atteindre.
+
+name: quiz
+
+# Durcissement commun aux trois services.
+x-durcissement: &durcissement
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  restart: unless-stopped
+
+services:
+  db:
+    <<: *durcissement
+    build: ./database
+    # Variables surchargées par la CI pour utiliser les images qu'elle a construites.
+    image: ${DB_IMAGE:-quiz-db:local}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?à définir dans .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?à définir dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:?à définir dans .env}
+    volumes:
+      # PostgreSQL 18 range ses données sous /var/lib/postgresql/18/docker :
+      # le volume se monte sur le dossier parent, comme le prévoit l'image.
+      - db-data:/var/lib/postgresql
+    tmpfs:
+      - /var/run/postgresql:uid=70,gid=70
+      - /tmp:uid=70,gid=70
+    networks: [back]
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 512M }
+
+  backend:
+    <<: *durcissement
+    build: ./backend
+    image: ${BACKEND_IMAGE:-quiz-backend:local}
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      RESEND_API_KEY: ${RESEND_API_KEY:?à définir dans .env (une valeur factice suffit)}
+      FROM_EMAIL: ${FROM_EMAIL:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?à définir dans .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?à définir dans .env}
+      JWT_SECRET: ${JWT_SECRET:?à définir dans .env}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [front, back]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  frontend:
+    <<: *durcissement
+    build: .
+    image: ${FRONTEND_IMAGE:-quiz-frontend:local}
+    environment:
+      BACKEND_ORIGIN: http://backend:3007
+    ports:
+      - "${FRONTEND_PORT:-8087}:8080"
+    tmpfs:
+      - /tmp:uid=101,gid=101
+      # Nginx y écrit sa configuration générée depuis le modèle au démarrage.
+      - /etc/nginx/conf.d:uid=101,gid=101
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [front]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 128M }
+
+networks:
+  front: {}
+  back:
+    # Pas d'accès sortant ni d'accès depuis l'hôte : seul le backend y parle à la base.
+    internal: true
+
+volumes:
+  db-data: {}
