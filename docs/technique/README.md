@@ -25,7 +25,7 @@ Chaque étape est une PR courte depuis une branche `feature/*` vers `main`, fusi
 | 4 | Durcissement des images, scans avant/après | Dockerfile, Conteneurs | J2 |
 | 5 | Docker Compose, Nginx durci, test d'intégration | Compose | J1 |
 | 6 | Contrôles de PR et protection de `main` | CI/CD | J6-A |
-| 7 | `deploy.sh`, `destroy.sh` et déploiement, après validation de J1 par le formateur | Azure | J3, J4, J5 |
+| 7 | `deploy.sh`, `destroy.sh` et déploiement (lancé sans attendre la validation de J1 : écart noté dans `preuves/J1`) | Azure | J3, J4, J5 |
 | 8 | Déploiement continu et démonstration par modification d'une **Question** | CI/CD | J6-B |
 | 9 | Terraform, vérifié en CI et prouvé par un `apply` puis un `destroy` | Infrastructure as code | — |
 | 10 | Schémas, documentation finale, README | Tous | Livrables |

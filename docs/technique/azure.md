@@ -83,7 +83,11 @@ $ ./scripts/deploy.sh
 $ ./scripts/destroy.sh                   # demande de retaper le nom du groupe
 ```
 
-`deploy.sh` est rejouable. Chaque ressource est créée si elle manque, sinon remise dans l'état décrit. Une image n'est construite que si son tag (le SHA du commit) n'est pas déjà dans le registre. Construite en linux/amd64, elle est scannée par Trivy avec les règles de la CI avant d'être publiée avec SBOM et provenance. Une seconde exécution sans changement ne crée aucune révision.
+`deploy.sh` est rejouable. Chaque ressource est créée si elle manque, sinon remise dans l'état décrit. Une seconde exécution ne crée aucune révision.
+
+**L'image d'une application n'est fixée qu'à sa création.**
+- **Création.** `deploy.sh` publie l'image du commit courant si elle n'est pas déjà dans le registre. Construite en linux/amd64, elle est scannée par Trivy avec les règles de la CI avant d'être publiée avec SBOM et provenance.
+- **Ensuite.** Seul le CD change l'image. Relancer `deploy.sh` après un déploiement du CD ne ramène donc jamais la production à une version antérieure. Une première version du script le faisait ([J3](../../preuves/J3/README.md#un-second-passage-ne-change-rien-et-ne-revient-jamais-en-arrière)).
 
 | Étape | Commande principale |
 | --- | --- |

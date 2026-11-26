@@ -22,16 +22,17 @@ Le mode WorkloadProfiles est indispensable : le mode Express, créé par défaut
 
 ## Applications : ingress, registre, identité
 
+État en production (image `df88c2c…`, révision `--0000006`) :
+
 ```console
 $ az containerapp show -g rg-quiz-gwc -n ca-quiz-frontend --query '{…}'
 {
   "cpu": 0.25,
-  "environnement": "/subscriptions/<abonnement>/resourceGroups/rg-quiz-gwc/providers/Microsoft.App/managedEnvironments/cae-quiz",
   "fqdn": "ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io",
   "httpAutorise": false,
   "identiteRegistre": "/subscriptions/<abonnement>/resourcegroups/rg-quiz-gwc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-quiz-pull",
   "identites": "UserAssigned",
-  "image": "crquizsdedu.azurecr.io/quiz-frontend:4eaf1123785bfb715c2e21cd91250f126ce4501c",
+  "image": "crquizsdedu.azurecr.io/quiz-frontend:df88c2cab964e4392f0288588ff8b0516dd52a65",
   "ingressExterne": true,
   "memoire": "0.5Gi",
   "portCible": 8080,
@@ -43,6 +44,7 @@ $ az containerapp show -g rg-quiz-gwc -n ca-quiz-frontend --query '{…}'
     "max": 3,
     "min": 0
   },
+  "revision": "ca-quiz-frontend--0000006",
   "sondesDeclarees": null,
   "transport": "Auto"
 }
@@ -50,12 +52,11 @@ $ az containerapp show -g rg-quiz-gwc -n ca-quiz-frontend --query '{…}'
 $ az containerapp show -g rg-quiz-gwc -n ca-quiz-backend --query '{…}'
 {
   "cpu": 0.25,
-  "environnement": "/subscriptions/<abonnement>/resourceGroups/rg-quiz-gwc/providers/Microsoft.App/managedEnvironments/cae-quiz",
   "fqdn": "ca-quiz-backend.internal.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io",
   "httpAutorise": false,
   "identiteRegistre": "/subscriptions/<abonnement>/resourcegroups/rg-quiz-gwc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-quiz-pull",
   "identites": "UserAssigned",
-  "image": "crquizsdedu.azurecr.io/quiz-backend:4eaf1123785bfb715c2e21cd91250f126ce4501c",
+  "image": "crquizsdedu.azurecr.io/quiz-backend:df88c2cab964e4392f0288588ff8b0516dd52a65",
   "ingressExterne": false,
   "memoire": "0.5Gi",
   "portCible": 3007,
@@ -67,6 +68,7 @@ $ az containerapp show -g rg-quiz-gwc -n ca-quiz-backend --query '{…}'
     "max": 3,
     "min": 0
   },
+  "revision": "ca-quiz-backend--0000006",
   "sondesDeclarees": null,
   "transport": "Http"
 }
@@ -83,21 +85,47 @@ $ az containerapp show -g rg-quiz-gwc -n ca-quiz-backend --query '{…}'
 
 ## Révisions
 
-```console
-$ az containerapp revision list -g rg-quiz-gwc -n <application> -o table
-Revision                  Etat     Sante    Replicas    Image
-------------------------  -------  -------  ----------  ----------------------------------------------------------------------------
-ca-quiz-backend--0000003  Running  Healthy  1           quiz-backend:3f5ab0d0e960081f74ca10d4b113621699b6223b
+Historique complet, du premier déploiement par `deploy.sh` jusqu'au dernier déploiement continu :
 
-Revision                   Etat     Sante    Replicas    Image
--------------------------  -------  -------  ----------  -----------------------------------------------------------------------------
-ca-quiz-frontend--0000003  Running  Healthy  1           quiz-frontend:3f5ab0d0e960081f74ca10d4b113621699b6223b
+```console
+$ az containerapp revision list -g rg-quiz-gwc -n <application> --all -o table
+Revision                  Active    Etat     Image                                                                         Creee
+------------------------  --------  -------  ----------------------------------------------------------------------------  -------------------------
+ca-quiz-backend--91t601e  False     Stopped  quiz-backend:4eaf1123785bfb715c2e21cd91250f126ce4501c  2026-11-26T12:38:33+00:00
+ca-quiz-backend--0000001  False     Stopped  quiz-backend:3f5ab0d0e960081f74ca10d4b113621699b6223b  2026-11-26T12:46:37+00:00
+ca-quiz-backend--0000002  False     Stopped  quiz-backend:4eaf1123785bfb715c2e21cd91250f126ce4501c  2026-11-26T12:48:54+00:00
+ca-quiz-backend--0000003  False     Stopped  quiz-backend:3f5ab0d0e960081f74ca10d4b113621699b6223b  2026-11-26T12:52:01+00:00
+ca-quiz-backend--0000004  False     Stopped  quiz-backend:05780a476cbbe32748d63ca3ca59cc14ee104388  2026-11-26T13:03:24+00:00
+ca-quiz-backend--0000005  False     Stopped  quiz-backend:1d38574f52cd9a7f316ba4fb6e08f1bb9b336de2  2026-11-26T13:08:33+00:00
+ca-quiz-backend--0000006  True      Running  quiz-backend:df88c2cab964e4392f0288588ff8b0516dd52a65  2026-11-26T13:25:15+00:00
+
+Revision                   Active    Etat     Image                                                                          Creee
+-------------------------  --------  -------  -----------------------------------------------------------------------------  -------------------------
+ca-quiz-frontend--2le2jer  False     Stopped  quiz-frontend:4eaf1123785bfb715c2e21cd91250f126ce4501c  2026-11-26T12:39:39+00:00
+ca-quiz-frontend--0000001  False     Stopped  quiz-frontend:3f5ab0d0e960081f74ca10d4b113621699b6223b  2026-11-26T12:46:54+00:00
+ca-quiz-frontend--0000002  False     Stopped  quiz-frontend:4eaf1123785bfb715c2e21cd91250f126ce4501c  2026-11-26T12:49:13+00:00
+ca-quiz-frontend--0000003  False     Stopped  quiz-frontend:3f5ab0d0e960081f74ca10d4b113621699b6223b  2026-11-26T12:52:20+00:00
+ca-quiz-frontend--0000004  False     Stopped  quiz-frontend:05780a476cbbe32748d63ca3ca59cc14ee104388  2026-11-26T13:03:39+00:00
+ca-quiz-frontend--0000005  False     Stopped  quiz-frontend:1d38574f52cd9a7f316ba4fb6e08f1bb9b336de2  2026-11-26T13:08:48+00:00
+ca-quiz-frontend--0000006  True      Running  quiz-frontend:df88c2cab964e4392f0288588ff8b0516dd52a65  2026-11-26T13:25:31+00:00
 
 ```
 
-Historique complet, du premier déploiement par `deploy.sh` jusqu'au déploiement continu, dans [`preuves/J6`](../J6/README.md#j6-b--déploiement-après-fusion).
+| Révision | Origine |
+| --- | --- |
+| `--91t601e` | Création par `deploy.sh` (image `4eaf112`) |
+| `--0000001` | CD, PR #11 |
+| `--0000002` | Retour en arrière involontaire : relance de `deploy.sh`, qui imposait alors son tag d'image ; corrigé depuis ([J3](../J3/README.md#un-second-passage-ne-change-rien-et-ne-revient-jamais-en-arrière)) |
+| `--0000003` | Réparation manuelle, retour à l'image du CD |
+| `--0000004` | CD, PR #12 |
+| `--0000005` | CD, PR #13 : la **Question** modifiée ([démonstration](../J6/README.md#démonstration-complète--une-question-modifiée-de-la-branche-à-azure)) |
+| `--0000006` | CD, PR #14, en production |
+
+En mode révision unique, seule la dernière révision est active ; les précédentes sont arrêtées.
 
 ## Journaux des révisions
+
+Extrait du premier démarrage (12:38 à 12:41 UTC) :
 
 ```console
 $ az containerapp logs show -g rg-quiz-gwc -n ca-quiz-backend --type console --tail 5

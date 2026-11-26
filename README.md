@@ -72,6 +72,7 @@ Détails : [CI/CD](docs/technique/ci-cd.md).
 | J4 | Container Apps, ingress, révisions, `/health` | [`preuves/J4`](preuves/J4/) |
 | J5 | PostgreSQL Neon chiffré, persistance | [`preuves/J5`](preuves/J5/) |
 | J6 | Contrôles avant fusion, déploiement après fusion | [`preuves/J6`](preuves/J6/) |
+| Bonus | Mise à l'échelle automatique sous charge | [`preuves/bonus`](preuves/bonus/) |
 
 Pull Requests : [toutes](https://github.com/Stephane-Dedu/eval-quiz-app/pulls?q=is%3Apr). Exécutions : [CI](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/ci.yml), [CD](https://github.com/Stephane-Dedu/eval-quiz-app/actions/workflows/cd.yml).
 

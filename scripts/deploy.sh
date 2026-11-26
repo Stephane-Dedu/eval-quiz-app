@@ -17,7 +17,8 @@
 #                   première requête) et le schéma n'est pas initialisé.
 #   RESEND_API_KEY  Absente : clé factice, les emails ne partent pas.
 #   ADMIN_USERNAME (admin), FROM_EMAIL, MIN_REPLICAS (0), MAX_REPLICAS (3),
-#   IMAGE_TAG (SHA du commit courant), BUDGET_AMOUNT (10), BUDGET_EMAIL
+#   IMAGE_TAG (SHA du commit courant, pour créer une application ; ensuite,
+#   l'image ne change que par le CD), BUDGET_AMOUNT (10), BUDGET_EMAIL
 #   (compte az), et les noms de ressources de la section « Configuration ».
 #
 # Requiert : az (connecté), docker avec buildx, git, jq, openssl ;
@@ -90,13 +91,11 @@ if [[ -n ${DATABASE_URL:-} && $DATABASE_URL != *sslmode=verify-full* && $DATABAS
   die "DATABASE_URL doit imposer TLS (sslmode=verify-full)"
 fi
 
-# Le tag d'image est le SHA du commit : il n'a de sens que si le code
-# construit est exactement ce commit.
-if [[ -z ${IMAGE_TAG:-} ]]; then
-  [[ -z $(git status --porcelain) ]] \
-    || die "Modifications non commitées : l'image ne correspondrait à aucun commit. Committez, ou fixez IMAGE_TAG."
-  IMAGE_TAG=$(git rev-parse HEAD)
-fi
+# Le tag d'image est le SHA du commit. Il ne sert qu'à créer une application :
+# ensuite, l'image ne change que par le CD (ADR 0004), pour qu'une relance de
+# ce script ne ramène jamais la production à une version antérieure.
+IMAGE_TAG_FIXED=${IMAGE_TAG:+true}
+IMAGE_TAG=${IMAGE_TAG:-$(git rev-parse HEAD)}
 
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 TENANT_ID=$(az account show --query tenantId -o tsv)
@@ -106,7 +105,7 @@ echo "Déploiement de Quiz App"
 info "abonnement   : $(az account show --query name -o tsv)"
 info "région       : $LOCATION (environnement Container Apps : $ENVIRONMENT_LOCATION)"
 info "groupe       : $RESOURCE_GROUP"
-info "tag d'image  : $IMAGE_TAG"
+info "tag d'image  : $IMAGE_TAG (utilisé seulement pour créer une application)"
 
 # --- Fonctions utilitaires ----------------------------------------------------
 
@@ -290,19 +289,29 @@ fi
 
 # --- 8. Images ----------------------------------------------------------------
 
-step "Images ($IMAGE_TAG)"
-# Constructeur BuildKit dédié : contrairement au pilote « docker » par défaut,
-# il sait attacher SBOM et provenance aux images publiées.
-exists docker buildx inspect "$BUILDER" || docker buildx create --name "$BUILDER" --driver docker-container >/dev/null
+step "Images"
+# Une image n'est construite que pour créer une application. Une application
+# existante garde son image : c'est le CD qui la fait évoluer.
+backend_exists=false
+frontend_exists=false
+exists az containerapp show -g "$RESOURCE_GROUP" -n "$BACKEND_APP" && backend_exists=true
+exists az containerapp show -g "$RESOURCE_GROUP" -n "$FRONTEND_APP" && frontend_exists=true
 logged_in=false
 
 publish() {
   local name=$1 context=$2 ref
   ref="$ACR_SERVER/quiz-$name:$IMAGE_TAG"
   if exists az acr repository show -n "$ACR_NAME" --image "quiz-$name:$IMAGE_TAG"; then
-    info "quiz-$name : déjà publiée (par la CI ou un déploiement précédent)"
+    info "quiz-$name : $IMAGE_TAG déjà publiée"
     return
   fi
+  # L'image construite doit correspondre exactement au commit dont elle porte le SHA.
+  if [[ -z $IMAGE_TAG_FIXED && -n $(git status --porcelain) ]]; then
+    die "Modifications non commitées : l'image ne correspondrait à aucun commit. Committez, ou fixez IMAGE_TAG."
+  fi
+  # Constructeur BuildKit dédié : contrairement au pilote « docker » par défaut,
+  # il sait attacher SBOM et provenance aux images publiées.
+  exists docker buildx inspect "$BUILDER" || docker buildx create --name "$BUILDER" --driver docker-container >/dev/null
   if [[ $logged_in == false ]]; then
     az acr login -n "$ACR_NAME" >/dev/null
     logged_in=true
@@ -326,8 +335,19 @@ publish() {
   info "quiz-$name : publiée"
 }
 
-publish backend backend
-publish frontend .
+current_image() {
+  az containerapp show -g "$RESOURCE_GROUP" -n "$1" --query "properties.template.containers[0].image" -o tsv
+}
+if [[ $backend_exists == true ]]; then
+  info "quiz-backend : application existante, image inchangée ($(current_image "$BACKEND_APP"))"
+else
+  publish backend backend
+fi
+if [[ $frontend_exists == true ]]; then
+  info "quiz-frontend : application existante, image inchangée ($(current_image "$FRONTEND_APP"))"
+else
+  publish frontend .
+fi
 
 # --- 9. Applications ----------------------------------------------------------
 
@@ -349,10 +369,11 @@ common=(--cpu 0.25 --memory 0.5Gi --min-replicas "$MIN_REPLICAS" --max-replicas 
   --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency "$HTTP_CONCURRENCY")
 
 step "Application backend"
-if exists az containerapp show -g "$RESOURCE_GROUP" -n "$BACKEND_APP"; then
+if [[ $backend_exists == true ]]; then
+  # Configuration remise dans l'état décrit ici, sans --image : l'image en place,
+  # déployée par le CD, est conservée.
   az containerapp secret set -g "$RESOURCE_GROUP" -n "$BACKEND_APP" --secrets "${backend_secrets[@]}" -o none
-  az containerapp update -g "$RESOURCE_GROUP" -n "$BACKEND_APP" \
-    --image "$ACR_SERVER/quiz-backend:$IMAGE_TAG" "${common[@]}" \
+  az containerapp update -g "$RESOURCE_GROUP" -n "$BACKEND_APP" "${common[@]}" \
     --replace-env-vars "${backend_env[@]}" -o none
 else
   # Ingress interne : joignable depuis l'environnement uniquement, pas depuis Internet.
@@ -374,9 +395,8 @@ step "Application frontend"
 # Tout le trafic entrant passe par le proxy de la plateforme : Nginx peut croire
 # la dernière adresse qu'il ajoute à X-Forwarded-For (adresse réelle du client).
 frontend_env=(BACKEND_ORIGIN="http://$BACKEND_APP" TRUSTED_PROXY_CIDR=0.0.0.0/0)
-if exists az containerapp show -g "$RESOURCE_GROUP" -n "$FRONTEND_APP"; then
-  az containerapp update -g "$RESOURCE_GROUP" -n "$FRONTEND_APP" \
-    --image "$ACR_SERVER/quiz-frontend:$IMAGE_TAG" "${common[@]}" \
+if [[ $frontend_exists == true ]]; then
+  az containerapp update -g "$RESOURCE_GROUP" -n "$FRONTEND_APP" "${common[@]}" \
     --replace-env-vars "${frontend_env[@]}" -o none
 else
   # Ingress externe en HTTPS ; une requête HTTP est redirigée (allowInsecure=false).
@@ -411,7 +431,8 @@ cat <<EOF
 ✅ Déploiement terminé
   Application     : $FRONTEND_URL
   Administration  : $FRONTEND_URL/gestion-quiz
-  Images          : $ACR_SERVER/quiz-{frontend,backend}:$IMAGE_TAG
+  Image backend   : $(current_image "$BACKEND_APP")
+  Image frontend  : $(current_image "$FRONTEND_APP")
 
 Variables de l'environnement GitHub « $GITHUB_ENVIRONMENT » (identifiants publics, pas des secrets) :
   AZURE_CLIENT_ID=$CI_CLIENT_ID
