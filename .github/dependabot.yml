@@ -1,0 +1,44 @@
+# Mises à jour automatiques proposées en PR, chacune passant par la CI.
+#
+# Les versions majeures sont ignorées pour les images et les paquets npm :
+# Node.js impair (non LTS), Express 5 ou Vite majeur changent le comportement
+# et se décident à la main.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories: ["/", "/backend", "/database"]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(docker)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      images:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directories: ["/", "/backend"]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      dependances:
+        update-types: ["minor", "patch"]
