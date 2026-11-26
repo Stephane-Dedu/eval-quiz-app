@@ -18,24 +18,24 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | Images multi-étapes : l'image finale ne contient ni outils de build ni `devDependencies` | `docker run --rm <image> ls node_modules` (backend) ; pas de `node` dans l'image frontend |
-| ☐ | Images de base épinglées par digest | `grep FROM` : chaque ligne contient `@sha256:` |
-| ☐ | Exécution en utilisateur non-root | `docker run --rm <image> id -u` ≠ 0 |
-| ☐ | Une modification de code seul réutilise la couche des dépendances | Journal de build : l'étape `npm ci` est `CACHED` |
-| ☐ | `.dockerignore` exclut `.git`, `node_modules`, `.env*`, `docs`, `preuves` | Contexte de build envoyé de quelques centaines de Ko |
-| ☐ | hadolint propre | `hadolint Dockerfile backend/Dockerfile` sans sortie, ou exception justifiée |
-| ☐ | Trivy : 0 CRITICAL, 0 HIGH corrigeable | `trivy image --severity HIGH,CRITICAL --ignore-unfixed` et `--severity CRITICAL` |
-| ☐ | Vulnérabilités restantes listées et justifiées | `.trivyignore` commenté, rapport final dans `preuves/J2/` |
-| ☐ | Taille des images mesurée avant et après durcissement | Tableau dans `preuves/J2/` |
-| ☐ | Métadonnées OCI (source, révision) | `docker inspect` affiche les labels `org.opencontainers.image.*` |
+| ✅ | Images multi-étapes : l'image finale ne contient ni outils de build ni `devDependencies` | Pas de `npm` dans l'image backend, pas de `node` dans l'image frontend |
+| ✅ | Images de base épinglées par digest | `grep FROM` : chaque ligne contient `@sha256:` |
+| ✅ | Exécution en utilisateur non-root | `docker run --rm <image> id -u` ≠ 0 |
+| ✅ | Une modification de code seul réutilise la couche des dépendances | Journal de build : l'étape `npm ci` est `CACHED` |
+| ✅ | `.dockerignore` en liste blanche : seuls les fichiers nécessaires entrent dans le contexte | Lecture des trois `.dockerignore` |
+| ✅ | hadolint propre | `hadolint Dockerfile backend/Dockerfile database/Dockerfile` sans sortie, ou exception justifiée |
+| ✅ | Trivy : 0 CRITICAL, 0 HIGH corrigeable | `trivy image --severity HIGH,CRITICAL --ignore-unfixed` et `--severity CRITICAL` |
+| ✅ | Vulnérabilités restantes listées et justifiées | Aucune restante (rapport final dans `preuves/J2/`) ; toute exception future va dans `.trivyignore` avec sa raison |
+| ✅ | Taille des images mesurée avant et après durcissement | Tableau dans `preuves/J2/` |
+| ✅ | Métadonnées OCI (source, révision) | `docker inspect` affiche les labels `org.opencontainers.image.*` ; la CI renseigne la révision |
 
 ## Conteneurs
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | Arrêt propre en moins de 2 secondes | `time docker stop <conteneur>` |
-| ☐ | Système de fichiers racine en lecture seule | `read_only: true` et le service reste sain |
-| ☐ | Aucune capacité Linux, aucune élévation de privilèges | `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]` |
+| ✅ | Arrêt propre en moins de 2 secondes | `time docker stop <conteneur>` |
+| ✅ | Système de fichiers racine en lecture seule | `read_only: true` et le service reste sain |
+| ✅ | Aucune capacité Linux, aucune élévation de privilèges | `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]` |
 | ☐ | Journaux sur la sortie standard | `docker compose logs <service>` les affiche |
 | ☐ | Ressources limitées | Limites CPU et mémoire déclarées par service |
 

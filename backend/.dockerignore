@@ -1,0 +1,6 @@
+# Liste blanche : seuls les fichiers nécessaires au backend entrent
+# dans le contexte de build.
+*
+!package.json
+!package-lock.json
+!server.js

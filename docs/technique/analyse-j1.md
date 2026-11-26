@@ -109,6 +109,6 @@ Le backend est le seul service branché sur les deux réseaux. Le frontend ne pe
 
 - **Trois conteneurs**, un par responsabilité : frontend (Nginx et fichiers statiques), backend, base. Nginx n'a pas de conteneur à part : il ne sert qu'à livrer les fichiers du frontend et à relayer l'API, donc il fait partie de l'image frontend.
 - **Images multi-étapes** : on construit avec Node, puis on n'embarque à l'exécution que le nécessaire (fichiers statiques pour le frontend, dépendances de production pour le backend).
-- **PostgreSQL utilise l'image officielle.** `init.sql` est monté dans `/docker-entrypoint-initdb.d/`, que l'image n'exécute que si le volume est vide. Cela correspond exactement à un script non rejouable.
+- **PostgreSQL part de l'image officielle**, dérivée dans `database/Dockerfile` pour embarquer `init.sql` dans `/docker-entrypoint-initdb.d/`. L'image officielle n'exécute ce dossier que si le volume est vide, ce qui correspond exactement à un script non rejouable. L'image dérivée démarre aussi en utilisateur `postgres` et retire `gosu`, devenu inutile (voir `preuves/J2/`).
 - **Persistance par un volume nommé** monté sur le répertoire de données de PostgreSQL. Recréer les conteneurs (`docker compose down` puis `up`, sans `-v`) conserve les données ; seul `docker compose down -v` les efface.
 - **Ordre de démarrage par contrôles de santé** : le backend attend que la base accepte les connexions, et le frontend attend le backend. Nginx a besoin de résoudre `backend` à son démarrage.

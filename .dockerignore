@@ -1,0 +1,14 @@
+# Liste blanche : seuls les fichiers nécessaires au build du frontend
+# entrent dans le contexte. Un nouveau fichier (secret, preuve, doc)
+# en est exclu par défaut.
+*
+!package.json
+!package-lock.json
+!vite.config.js
+!index.html
+!gestion-quiz.html
+!main.js
+!style.css
+!questions_*.js
+!public/
+!nginx/default.conf.template
