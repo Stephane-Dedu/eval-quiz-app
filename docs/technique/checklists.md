@@ -89,12 +89,12 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | `fmt`, `validate`, `tflint` et Trivy propres en CI | Onglet Checks de la PR |
-| ☐ | Versions de Terraform et du provider épinglées, lock file versionné | `.terraform.lock.hcl` présent |
+| ✅ | `fmt`, `validate`, `tflint` et Trivy propres en CI | Onglet Checks de la PR |
+| ✅ | Versions de Terraform et des fournisseurs épinglées, lock file versionné | `.terraform.lock.hcl` présent |
 | ☐ | `apply` depuis zéro dans un groupe de ressources dédié, puis `destroy` complet | Preuve dans `preuves/terraform/` |
-| ☐ | Aucun secret versionné ; variables sensibles marquées `sensitive` | Lecture du code |
-| ☐ | Correspondance avec `deploy.sh` | Tableau commande `az` ↔ ressource Terraform |
-| ☐ | Graphe des dépendances généré | `terraform graph` rendu en SVG par script |
+| ✅ | Aucun secret versionné ; variables sensibles marquées `sensitive` | Lecture du code |
+| ✅ | Correspondance avec `deploy.sh` | Tableau commande `az` ↔ ressource Terraform dans `infra/terraform/README.md` |
+| ✅ | Graphe des dépendances généré | `infra/terraform/graphe.sh` → `graphe.svg` |
 
 ## Documentation et livrables
 
