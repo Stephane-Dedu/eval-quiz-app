@@ -34,6 +34,10 @@ cd "$(dirname "$0")/.."
 # --- Configuration ------------------------------------------------------------
 
 LOCATION=${LOCATION:-germanywestcentral}
+# Région de l'environnement Container Apps (et donc des applications). Azure for
+# Students n'autorise qu'un environnement par région, et une région reste bloquée
+# un temps indéterminé après la suppression de son environnement (ADR 0005).
+ENVIRONMENT_LOCATION=${ENVIRONMENT_LOCATION:-belgiumcentral}
 RESOURCE_GROUP=${RESOURCE_GROUP:-rg-quiz-gwc}
 ACR_NAME=${ACR_NAME:-crquizsdedu}
 LOG_WORKSPACE=${LOG_WORKSPACE:-log-quiz}
@@ -97,7 +101,7 @@ BUDGET_EMAIL=${BUDGET_EMAIL:-$(az account show --query user.name -o tsv)}
 
 echo "Déploiement de Quiz App"
 info "abonnement   : $(az account show --query name -o tsv)"
-info "région       : $LOCATION"
+info "région       : $LOCATION (environnement Container Apps : $ENVIRONMENT_LOCATION)"
 info "groupe       : $RESOURCE_GROUP"
 info "tag d'image  : $IMAGE_TAG"
 
@@ -214,13 +218,38 @@ info "seuls les workflows de $GITHUB_REPOSITORY dans l'environnement « $GITHUB_
 # --- 6. Environnement Container Apps ------------------------------------------
 
 step "Environnement Container Apps"
-if ! exists az containerapp env show -g "$RESOURCE_GROUP" -n "$ENVIRONMENT"; then
+# Créé par l'API REST, pas par « az containerapp env create » : Azure CLI ne
+# sait pas choisir le mode d'environnement et crée un environnement « Express ».
+# Ce mode n'a ni découverte de services interne (le frontend ne pourrait pas
+# joindre un backend interne) ni domaine personnalisé. Le mode WorkloadProfiles
+# les a, ainsi que le chiffrement du trafic entre applications.
+env_api="https://management.azure.com$RG_ID/providers/Microsoft.App/managedEnvironments/$ENVIRONMENT?api-version=2026-07-01"
+env_mode=$(az rest --method get --url "$env_api" --query properties.environmentMode -o tsv 2>/dev/null || true)
+if [[ -z $env_mode ]]; then
   LOG_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RESOURCE_GROUP" -n "$LOG_WORKSPACE" \
     --query primarySharedKey -o tsv)
-  az containerapp env create -g "$RESOURCE_GROUP" -n "$ENVIRONMENT" -l "$LOCATION" \
-    --logs-workspace-id "$LOG_CUSTOMER_ID" --logs-workspace-key "$LOG_KEY" --tags "${TAGS[@]}" -o none
+  env_body=$(jq -n --arg location "$ENVIRONMENT_LOCATION" --arg id "$LOG_CUSTOMER_ID" --arg key "$LOG_KEY" '{
+    location: $location,
+    tags: {projet: "quiz-app", gestion: "deploy.sh"},
+    properties: {
+      environmentMode: "WorkloadProfiles",
+      workloadProfiles: [{name: "Consumption", workloadProfileType: "Consumption"}],
+      peerTrafficConfiguration: {encryption: {enabled: true}},
+      appLogsConfiguration: {destination: "log-analytics",
+                             logAnalyticsConfiguration: {customerId: $id, sharedKey: $key}}}}')
+  az rest --method put --url "$env_api" --body "$env_body" -o none
+  # La création est asynchrone : on attend qu'elle aboutisse.
+  for _ in $(seq 1 60); do
+    state=$(az rest --method get --url "$env_api" --query properties.provisioningState -o tsv)
+    [[ $state == Succeeded ]] && break
+    [[ $state == Failed ]] && die "création de $ENVIRONMENT en échec"
+    sleep 10
+  done
+  [[ $state == Succeeded ]] || die "création de $ENVIRONMENT trop longue"
+elif [[ $env_mode != WorkloadProfiles ]]; then
+  die "$ENVIRONMENT est en mode $env_mode : il faut le mode WorkloadProfiles. Supprimez-le (az containerapp env delete) puis relancez."
 fi
-info "$ENVIRONMENT ($(az containerapp env show -g "$RESOURCE_GROUP" -n "$ENVIRONMENT" --query properties.defaultDomain -o tsv))"
+info "$ENVIRONMENT (mode WorkloadProfiles, trafic entre applications chiffré, $(az containerapp env show -g "$RESOURCE_GROUP" -n "$ENVIRONMENT" --query properties.defaultDomain -o tsv))"
 
 # --- 7. Schéma de la base -----------------------------------------------------
 
@@ -323,14 +352,15 @@ else
     --secrets "${backend_secrets[@]}" --env-vars "${backend_env[@]}" \
     "${common[@]}" --tags "${TAGS[@]}" -o none
 fi
-BACKEND_FQDN=$(az containerapp show -g "$RESOURCE_GROUP" -n "$BACKEND_APP" --query properties.configuration.ingress.fqdn -o tsv)
-info "$BACKEND_APP : https://$BACKEND_FQDN (interne)"
+info "$BACKEND_APP : http://$BACKEND_APP (interne à l'environnement)"
 
 step "Application frontend"
-# Nginx appelle le backend en HTTPS sur son nom interne, en vérifiant le certificat.
+# Nginx appelle le backend par son nom d'application : la découverte de services
+# de l'environnement le résout, et le chiffrement entre applications protège ce
+# trafic sans certificat à gérer dans Nginx.
 # Tout le trafic entrant passe par le proxy de la plateforme : Nginx peut croire
 # la dernière adresse qu'il ajoute à X-Forwarded-For (adresse réelle du client).
-frontend_env=(BACKEND_ORIGIN="https://$BACKEND_FQDN" TRUSTED_PROXY_CIDR=0.0.0.0/0)
+frontend_env=(BACKEND_ORIGIN="http://$BACKEND_APP" TRUSTED_PROXY_CIDR=0.0.0.0/0)
 if exists az containerapp show -g "$RESOURCE_GROUP" -n "$FRONTEND_APP"; then
   az containerapp update -g "$RESOURCE_GROUP" -n "$FRONTEND_APP" \
     --image "$ACR_SERVER/quiz-frontend:$IMAGE_TAG" "${common[@]}" \

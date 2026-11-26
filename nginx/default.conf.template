@@ -4,7 +4,8 @@
 #
 # BACKEND_ORIGIN : adresse du backend vue depuis ce conteneur.
 #   - Docker Compose : http://backend:3007
-#   - Azure Container Apps : https://ca-quiz-backend.internal.<domaine>
+#   - Azure Container Apps : http://ca-quiz-backend (nom de l'application,
+#     résolu par l'environnement ; trafic chiffré entre applications)
 #   L'en-tête Host envoyé au backend reste celui de BACKEND_ORIGIN (comportement
 #   par défaut de proxy_pass) : sur Container Apps, c'est ce nom qui permet au
 #   proxy de la plateforme de router la requête vers la bonne application.
