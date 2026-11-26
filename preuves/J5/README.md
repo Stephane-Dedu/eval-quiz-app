@@ -131,3 +131,15 @@ $ az containerapp logs show -g rg-quiz-gwc -n ca-quiz-backend --type console --t
 ```
 
 Le backend a redémarré à 12:42:47, après son premier démarrage à 12:38:51. Le **Participant** et le **Résultat** sont toujours lus par l'API d'administration : ils vivent dans Neon, pas dans le conteneur.
+
+## Mise en veille de Neon
+
+Sur l'offre gratuite, Neon met la base en veille après 5 minutes d'inactivité. Le backend se connecte avec un délai maximal de 2 secondes (`connectionTimeoutMillis: 2000`, dans le code fourni) : un réveil plus lent ferait échouer la première requête. Mesure après plus de 8 minutes sans aucune requête SQL :
+
+```text
+GET /api/admin/results, appel 1 : HTTP 200 en 1.044080 s
+GET /api/admin/results, appel 2 : HTTP 200 en 0.204089 s
+GET /api/admin/results, appel 3 : HTTP 200 en 0.191402 s
+```
+
+Le premier appel coûte environ 0,85 s de plus que les suivants : réveil de la base et ouverture de la connexion TLS. Il reste deux fois sous le délai de 2 s ; aucun échec n'a été observé.

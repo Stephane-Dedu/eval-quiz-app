@@ -69,7 +69,7 @@ Ruleset actif sur la branche par défaut, **sans aucune exception de contourneme
 
 ## CD : `.github/workflows/cd.yml`
 
-Déclenché à chaque push sur `main`, donc à chaque fusion. Un seul job, `Publier et déployer`, dans l'environnement `production` :
+Déclenché à chaque push sur `main`, donc à chaque fusion, sauf quand seuls la documentation ou les preuves changent (`docs/**`, `preuves/**`, `*.md`) : les images seraient identiques. Un seul job, `Publier et déployer`, dans l'environnement `production` :
 
 | Étape | Rôle |
 | --- | --- |

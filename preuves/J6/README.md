@@ -2,6 +2,12 @@
 
 **Date :** 2026-11-26
 
+| Section | Contenu |
+| --- | --- |
+| [J6-A](#j6-a--contrôles-obligatoires-avant-fusion) | Ruleset de `main`, push direct refusé, CRITICAL bloquante même avec `--admin` |
+| [J6-B](#j6-b--déploiement-après-fusion) | CD : échec OIDC corrigé, passage approuvé, tags par SHA, révisions |
+| [Démonstration](#démonstration-complète--une-question-modifiée-de-la-branche-à-azure) | Une **Question** modifiée : PR rouge puis verte, fusion, approbation, nouvelle révision, Question en ligne |
+
 ## J6-A : contrôles obligatoires avant fusion
 
 ### Le ruleset de `main`
@@ -103,6 +109,8 @@ Une première version du test (image d'exécution repassée sur `node:20`) a ét
 
 Le dépôt n'a qu'un contributeur et GitHub interdit à l'auteur d'une PR de l'approuver : exiger une approbation bloquerait toute fusion. Conformément à `docs/04`, la règle n'est pas prétendue active : `required_approving_review_count` vaut 0, et passe à 1 dès qu'un second membre a les droits.
 
+**Mesure compensatoire :** l'environnement GitHub `production` exige l'approbation d'un relecteur désigné. Aucune image n'est publiée et rien n'est déployé avant cette approbation explicite, tracée avec son commentaire (voir [J6-B](#j6-b--déploiement-après-fusion) et la [démonstration](#3-approbation-publication-déploiement)).
+
 ## J6-B : déploiement après fusion
 
 Workflow [`cd.yml`](../../.github/workflows/cd.yml), déclenché par chaque push sur `main`. Étapes : approbation sur l'environnement `production`, rebuild, second scan Trivy, connexion OIDC, publication, nouvelles révisions, vérification ([CI/CD](../../docs/technique/ci-cd.md#cd--githubworkflowscdyml)).
@@ -189,3 +197,67 @@ GET https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerap
 ```
 
 Chaque fusion crée une nouvelle révision de chacune des deux applications (`--0000001`), sur l'image taguée par le commit de fusion. Juste après la mise à jour, l'ancienne et la nouvelle révision apparaissent toutes deux actives, le temps de la bascule. En mode révision unique, l'ancienne est ensuite désactivée : seule la plus récente reste active ([J4](../J4/README.md#révisions)).
+
+## Démonstration complète : une Question modifiée, de la branche à Azure
+
+Scénario de `docs/06` : modification d'une **Question** → branche → Pull Request → contrôle Trivy → approbation → fusion → publication ACR → mise à jour d'Azure Container Apps. [PR #13](https://github.com/Stephane-Dedu/eval-quiz-app/pull/13), branche `feature/question-docker`.
+
+### 1. Contrôle échoué, puis réussi
+
+| Commit | Contenu | CI |
+| --- | --- | --- |
+| `f4396f9` | Première **Question** de `questions_docker.js` reformulée, et `lodash@4.17.11` ajouté au backend | ❌ [Run 45825188223](https://github.com/Stephane-Dedu/eval-quiz-app/actions/runs/45825188223) : `Image backend (build et Trivy)` échoue à l'étape `Trivy (toute vulnérabilité CRITICAL bloque)`, fusion `BLOCKED` |
+| `0eb89e1` | `lodash` retiré | ✅ [Run 45825404428](https://github.com/Stephane-Dedu/eval-quiz-app/actions/runs/45825404428) : les 5 contrôles requis au vert |
+
+Extrait du journal du job en échec :
+
+```text
+Total: 1 (CRITICAL: 1)
+│ lodash (package.json) │ CVE-2019-10744 │ CRITICAL │ fixed  │ 4.17.11           │ 4.17.12       │ nodejs-lodash: prototype pollution in defaultsDeep function │
+```
+
+Le passage rouge apparaît « annulé » dans la liste des runs : son job backend avait déjà échoué quand le push du second commit a annulé le reste du passage (`concurrency`), devenu inutile.
+
+### 2. Fusion
+
+Fusion par squash (`1d38574`) : seule la modification de la **Question** arrive sur `main`, l'aller-retour de `lodash` disparaît.
+
+```console
+$ git show --stat 1d38574
+ questions_docker.js | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+```
+
+### 3. Approbation, publication, déploiement
+
+[Run CD 45825854138](https://github.com/Stephane-Dedu/eval-quiz-app/actions/runs/45825854138) : créé à 13:06:03 UTC, en attente jusqu'à l'approbation, job de 13:06:50 à 13:09:35, succès.
+
+```console
+$ gh api repos/Stephane-Dedu/eval-quiz-app/actions/runs/45825854138/approvals --jq '…'
+approbation : Stephane-Dedu approved production — Démonstration docs/06 : question Docker reformulée (PR #13), contrôles verts après retrait de lodash.
+```
+
+Révisions avant et après :
+
+```text
+Avant
+ca-quiz-backend	ca-quiz-backend--0000004	quiz-backend:05780a476cbbe32748d63ca3ca59cc14ee104388
+ca-quiz-frontend	ca-quiz-frontend--0000004	quiz-frontend:05780a476cbbe32748d63ca3ca59cc14ee104388
+Après
+ca-quiz-backend	ca-quiz-backend--0000005	quiz-backend:1d38574f52cd9a7f316ba4fb6e08f1bb9b336de2
+ca-quiz-frontend	ca-quiz-frontend--0000005	quiz-frontend:1d38574f52cd9a7f316ba4fb6e08f1bb9b336de2
+```
+
+### 4. La nouvelle Question est en ligne
+
+Vite produit un fichier JavaScript par **Sujet**, au nom haché par son contenu. Le fichier des Questions Docker a changé de nom, et son contenu porte la nouvelle formulation :
+
+```console
+$ curl -s https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io/assets/questions_docker-isXo3atz.js | grep -o 'Quelle commande[^?]*Dockerfile ?'
+Quelle commande est utilisée pour créer une nouvelle image à partir d'un Dockerfile ?
+
+$ curl -s https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io/assets/questions_docker-CZzS7tH0.js | grep -o 'Quelle commande[^?]*Dockerfile ?'
+Quelle commande construit une image Docker à partir d'un Dockerfile ?
+```
+
+Le navigateur récupère ce nouveau fichier dès le chargement suivant : les pages HTML sont servies en `no-cache`, et le nouveau nom de fichier contourne le cache d'un an des fichiers hachés.

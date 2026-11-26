@@ -63,25 +63,25 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | ✅ | Une PR ne pousse aucune image et ne déploie rien | Aucune étape de connexion Azure dans les jobs de PR |
 | ✅ | Push direct sur `main` refusé, y compris pour l'administrateur | Preuve dans `preuves/J6/` |
 | ✅ | Fusion bloquée tant que les contrôles requis ne sont pas verts, même avec `--admin` | Preuve dans `preuves/J6/` |
-| ☐ | Connexion à Azure par OIDC, aucun secret applicatif dans GitHub | `gh secret list` vide ; seules des variables d'identifiants publics |
-| ☐ | Images publiées avec le tag du commit, SBOM et provenance | `az acr repository show-tags` ; attestations attachées |
-| ☐ | Chaque fusion crée une nouvelle révision des deux applications | `az containerapp revision list` |
+| ✅ | Connexion à Azure par OIDC, aucun secret applicatif dans GitHub | `gh secret list` vide ; seules des variables d'identifiants publics |
+| ✅ | Images publiées avec le tag du commit, SBOM et provenance | `az acr repository show-tags` ; attestations attachées |
+| ✅ | Chaque fusion crée une nouvelle révision des deux applications | `az containerapp revision list` |
 
 ## Azure
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | `deploy.sh` crée tout depuis zéro | Exécution sur un abonnement sans groupe de ressources |
-| ☐ | `deploy.sh` est rejouable | Seconde exécution : aucune ressource recréée, code de sortie 0 |
+| ✅ | `deploy.sh` crée tout depuis zéro | Exécution sur un abonnement sans groupe de ressources |
+| ✅ | `deploy.sh` est rejouable | Seconde exécution : aucune ressource recréée, code de sortie 0 |
 | ☐ | `destroy.sh` supprime tout, puis `deploy.sh` refonctionne | Cycle complet documenté |
-| ☐ | Scripts sûrs | shellcheck propre ; `set -euo pipefail` ; refus de s'exécuter sans les variables requises |
-| ☐ | Compte administrateur du registre désactivé ; tirage par identité managée | `az acr show --query adminUserEnabled` = `false` |
-| ☐ | Backend injoignable depuis Internet | Ingress interne ; `curl` de son nom public échoue |
-| ☐ | Frontend en HTTPS uniquement | `allowInsecure: false` ; HTTP redirigé |
-| ☐ | `/health` répond `200 {"status":"ok"}` via le frontend | `curl` dans `preuves/J4/` |
-| ☐ | Connexion PostgreSQL chiffrée, schéma appliqué une seule fois | `sslmode` dans l'URL ; journal du script |
-| ☐ | Un **Participant** et un **Résultat** persistent après redémarrage | Preuve dans `preuves/J5/` |
-| ☐ | Alerte budgétaire en place | `az consumption budget list` |
+| ✅ | Scripts sûrs | shellcheck propre ; `set -euo pipefail` ; refus de s'exécuter sans les variables requises |
+| ✅ | Compte administrateur du registre désactivé ; tirage par identité managée | `az acr show --query adminUserEnabled` = `false` |
+| ✅ | Backend injoignable depuis Internet | Ingress interne ; `curl` de son nom public renvoie la page 404 de la plateforme |
+| ✅ | Frontend en HTTPS uniquement | `allowInsecure: false` ; HTTP redirigé |
+| ✅ | `/health` répond `200 {"status":"ok"}` via le frontend | `curl` dans `preuves/J4/` |
+| ✅ | Connexion PostgreSQL chiffrée, schéma appliqué une seule fois | `sslmode` dans l'URL ; journal du script |
+| ✅ | Un **Participant** et un **Résultat** persistent après redémarrage | Preuve dans `preuves/J5/` |
+| ✅ | Alerte budgétaire en place | `az consumption budget list` |
 | ☐ | Bonus : la mise à l'échelle automatique répond à la charge | Test de charge, nombre de réplicas avant, pendant et après |
 | ☐ | Bonus : sous-domaine personnalisé avec certificat géré | `curl https://<sous-domaine>` |
 
@@ -100,8 +100,8 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | Lancement local, déploiement, prérequis et nettoyage documentés | README |
+| ✅ | Lancement local, déploiement, prérequis et nettoyage documentés | README |
 | ☐ | Schémas d'architecture locale et cloud | Mermaid dans la documentation, versions HTML/SVG dans `docs/diagrammes/` |
-| ☐ | Preuves datées par **Jalon**, sans secret | `preuves/J0/` à `preuves/J6/` |
+| ✅ | Preuves datées par **Jalon**, sans secret | `preuves/J0/` à `preuves/J6/` |
 | ✅ | Problèmes connus documentés | `docs/technique/problemes-connus.md` |
 | ✅ | Section « Usage de l'IA » | README |
