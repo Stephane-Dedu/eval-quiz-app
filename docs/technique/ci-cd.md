@@ -54,7 +54,9 @@ Ruleset actif sur la branche par défaut, **sans aucune exception de contourneme
 | Pas de suppression, pas de force push | L'historique de `main` ne peut pas être réécrit |
 | Historique linéaire | Fusion par squash uniquement : un commit par PR |
 
-**Limite assumée : 0 approbation requise.** Le dépôt n'a qu'un contributeur, et GitHub interdit à l'auteur d'une PR de l'approuver. Exiger une approbation bloquerait toute fusion. Le sujet le prévoit : la règle n'est activée que si un autre membre a les droits, et sinon elle est documentée plutôt que prétendue active. Avec un second membre, il suffit de passer `required_approving_review_count` à 1.
+**Limite assumée : 0 approbation requise sur les PR.** Le dépôt n'a qu'un contributeur, et GitHub interdit à l'auteur d'une PR de l'approuver. Exiger une approbation bloquerait toute fusion. Le sujet le prévoit : la règle n'est activée que si un autre membre a les droits, et sinon elle est documentée plutôt que prétendue active. Avec un second membre, il suffit de passer `required_approving_review_count` à 1.
+
+**Mesure compensatoire : approbation obligatoire avant tout déploiement.** L'environnement GitHub `production` exige l'approbation d'un relecteur désigné. Rien n'est publié dans le registre ni déployé tant qu'elle n'est pas donnée, et le job reste en attente. L'auto-approbation est autorisée (`prevent_self_review: false`), seul moyen d'approuver avec un unique contributeur ; chaque approbation reste tracée dans l'historique des déploiements.
 
 ## Sécurité du dépôt
 
@@ -64,3 +66,31 @@ Ruleset actif sur la branche par défaut, **sans aucune exception de contourneme
 | Alertes Dependabot et correctifs de sécurité automatiques | Activés |
 | Dependabot (versions) | Hebdomadaire : actions, images de base, paquets npm ; versions majeures exclues pour les images et npm |
 | Rapports Trivy | Onglet Security, une catégorie par image |
+
+## CD : `.github/workflows/cd.yml`
+
+Déclenché à chaque push sur `main`, donc à chaque fusion. Un seul job, `Publier et déployer`, dans l'environnement `production` :
+
+| Étape | Rôle |
+| --- | --- |
+| Attente d'approbation | L'environnement `production` exige une approbation explicite et n'accepte que `main` |
+| Build et Trivy | Les deux images sont reconstruites (depuis le cache) et rescannées avec les règles de la CI. La fusion par squash crée un nouveau commit : l'image publiée n'est pas celle que la PR a scannée, d'où ce second scan |
+| Connexion OIDC | `azure/login` échange un jeton GitHub de courte durée contre un accès de l'identité `id-quiz-github` |
+| Publication | Images taguées par le SHA du commit de fusion, avec SBOM et provenance |
+| Déploiement | `az containerapp update --image` sur le backend, puis le frontend : une nouvelle révision chacun |
+| Vérification | Les nouvelles révisions doivent être prêtes et `/health` doit répondre 200 ; révisions avant et après dans le résumé du job |
+
+### Pourquoi OIDC
+
+Aucun mot de passe Azure n'est stocké dans GitHub. L'identité `id-quiz-github` fait confiance aux jetons émis par GitHub pour le sujet exact `repo:Stephane-Dedu/eval-quiz-app:environment:production`. Un workflow d'un autre dépôt, d'une autre branche ou d'un autre environnement ne peut pas s'en servir.
+
+| Valeur dans GitHub | Nature |
+| --- | --- |
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | Variables de l'environnement `production` : identifiants publics, pas des secrets |
+| Secrets | Aucun (`gh secret list` est vide) |
+
+L'identité ne peut que pousser dans le registre et créer des révisions des applications du groupe de ressources. Les secrets de l'application restent dans Container Apps ([ADR 0004](../adr/0004-cd-sans-secret-applicatif.md)).
+
+### Cache entre CI et CD
+
+Le cache GitHub Actions est cloisonné par branche : une PR lit le cache de `main`, mais `main` ne lit pas celui des PR. Le premier passage du CD reconstruit donc à froid. Il écrit ensuite son cache sur `main`, que les PR suivantes réutilisent.

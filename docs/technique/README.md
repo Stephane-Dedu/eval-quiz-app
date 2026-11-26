@@ -1,13 +1,15 @@
 # Documentation technique
 
-Documentation du groupe. Les fichiers `docs/01` à `docs/09` sont le sujet du formateur et ne sont pas modifiés.
+Documentation du groupe. Le sujet du formateur est dans `docs/00-sujet.md` (son README d'origine) et `docs/01` à `docs/09`, non modifiés.
 
 | Document | Contenu |
 | --- | --- |
 | [Analyse J1](analyse-j1.md) | Composants, ports, configuration, routes, persistance, architecture locale |
 | [Listes de contrôle](checklists.md) | Critères vérifiables pour déclarer chaque **Volet** terminé |
 | [Conteneurisation](conteneurisation.md) | Images, Docker Compose, Nginx : lancement local et raisons de chaque choix |
-| [CI/CD](ci-cd.md) | Contrôles de PR, protection de `main`, sécurité du dépôt |
+| [CI/CD](ci-cd.md) | Contrôles de PR, protection de `main`, déploiement continu, sécurité du dépôt |
+| [Azure](azure.md) | Architecture cloud, ressources, réseau, secrets, déploiement et destruction |
+| [Problèmes connus](problemes-connus.md) | Défauts du code fourni et leur traitement |
 | [Décisions d'architecture](../adr/) | Les choix difficiles à défaire et leurs raisons |
 | [Vocabulaire](../../GLOSSARY.md) | Les termes du domaine et ceux à éviter |
 

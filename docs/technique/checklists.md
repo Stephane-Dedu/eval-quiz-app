@@ -8,7 +8,7 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
-| ☐ | Aucune modification de logique métier, hormis la **Question** de démonstration | `git diff upstream/main -- backend/server.js main.js public/admin.js database/init.sql` est vide |
+| ✅ | Aucune modification de logique métier, hormis la **Question** de démonstration | `git diff upstream/main` sur les fichiers applicatifs : seuls la version de Vite (`package.json`) et `import.meta.dirname` (`vite.config.js`) diffèrent |
 | ✅ | Les dépendances s'installent de façon reproductible | `npm ci` réussit à la racine et dans `backend/` (lockfiles versionnés) |
 | ✅ | Aucun fichier mort ni doublon | Plus de `database/nginx/`, de `*.svg.old` ni d'image non référencée |
 | ✅ | Analyse J1 rédigée | `docs/technique/analyse-j1.md` |
@@ -103,5 +103,5 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | ☐ | Lancement local, déploiement, prérequis et nettoyage documentés | README |
 | ☐ | Schémas d'architecture locale et cloud | Mermaid dans la documentation, versions HTML/SVG dans `docs/diagrammes/` |
 | ☐ | Preuves datées par **Jalon**, sans secret | `preuves/J0/` à `preuves/J6/` |
-| ☐ | Problèmes connus documentés | `docs/technique/problemes-connus.md` |
-| ☐ | Section « Usage de l'IA » | README |
+| ✅ | Problèmes connus documentés | `docs/technique/problemes-connus.md` |
+| ✅ | Section « Usage de l'IA » | README |
