@@ -7,6 +7,7 @@ Documentation du groupe. Les fichiers `docs/01` à `docs/09` sont le sujet du fo
 | [Analyse J1](analyse-j1.md) | Composants, ports, configuration, routes, persistance, architecture locale |
 | [Listes de contrôle](checklists.md) | Critères vérifiables pour déclarer chaque **Volet** terminé |
 | [Conteneurisation](conteneurisation.md) | Images, Docker Compose, Nginx : lancement local et raisons de chaque choix |
+| [CI/CD](ci-cd.md) | Contrôles de PR, protection de `main`, sécurité du dépôt |
 | [Décisions d'architecture](../adr/) | Les choix difficiles à défaire et leurs raisons |
 | [Vocabulaire](../../GLOSSARY.md) | Les termes du domaine et ceux à éviter |
 
