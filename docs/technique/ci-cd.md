@@ -82,7 +82,15 @@ Déclenché à chaque push sur `main`, donc à chaque fusion. Un seul job, `Publ
 
 ### Pourquoi OIDC
 
-Aucun mot de passe Azure n'est stocké dans GitHub. L'identité `id-quiz-github` fait confiance aux jetons émis par GitHub pour le sujet exact `repo:Stephane-Dedu/eval-quiz-app:environment:production`. Un workflow d'un autre dépôt, d'une autre branche ou d'un autre environnement ne peut pas s'en servir.
+Aucun mot de passe Azure n'est stocké dans GitHub. L'identité `id-quiz-github` fait confiance aux jetons émis par GitHub pour un sujet exact :
+
+```text
+repo:Stephane-Dedu@105072484/eval-quiz-app@1472861267:environment:production
+```
+
+- **Les identifiants immuables du compte et du dépôt font partie du sujet** (option `use_immutable_subject` de GitHub). Si le dépôt était renommé, ou supprimé puis recréé sous le même nom, le nouveau dépôt n'obtiendrait pas cette confiance.
+- **Seul l'environnement `production` est accepté.** Un workflow d'un autre dépôt, d'une autre branche ou d'un autre environnement ne peut pas se servir de l'identité.
+- **Ce format a été constaté au premier passage du CD.** L'identifiant fédéré, créé avec le format classique `repo:<compte>/<dépôt>:…`, a été refusé (`AADSTS700213: No matching federated identity record found`). Le sujet réellement présenté a été relevé dans le journal, puis vérifié par l'API GitHub (`actions/oidc/customization/sub`).
 
 | Valeur dans GitHub | Nature |
 | --- | --- |

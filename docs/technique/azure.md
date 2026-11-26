@@ -120,4 +120,4 @@ Voir [CI/CD](ci-cd.md). Après chaque fusion dans `main`, le workflow `cd.yml` :
 | 404 JSON `{"error":"Not found"}` sur `/api` ou `/health` | Le frontend appelle le backend par son URL publique (environnement Express) | Environnement en mode WorkloadProfiles, `BACKEND_ORIGIN=http://ca-quiz-backend` |
 | 502 sur `/api` | Nginx ne joint pas le backend | `az containerapp logs show -n ca-quiz-frontend` ; vérifier `BACKEND_ORIGIN` |
 | 500 sur l'inscription | Base injoignable ou schéma absent | Vérifier `DATABASE_URL` (TLS), relancer `deploy.sh` |
-| Le CD échoue à la connexion Azure | Job hors de l'environnement `production` ou mauvaise variable | Identifiant fédéré : `repo:Stephane-Dedu/eval-quiz-app:environment:production` |
+| Le CD échoue à la connexion Azure (`AADSTS700213`) | Sujet du jeton différent de celui de l'identifiant fédéré | Comparer le sujet affiché dans le journal du job avec `az identity federated-credential show` ; ici `repo:Stephane-Dedu@105072484/eval-quiz-app@1472861267:environment:production` |
