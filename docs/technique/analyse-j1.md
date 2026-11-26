@@ -17,8 +17,10 @@ Les points marqués « à vérifier » sont des déductions de lecture ; ils son
 Conséquences pour la conteneurisation :
 
 - **Le frontend n'a aucune URL de backend à configurer.** Tous ses appels sont relatifs, donc il doit être servi par un serveur qui relaie `/api` vers le backend sur la même origine. Nginx et les fichiers statiques vont dans la même image : l'image frontend.
-- **Le backend refuse de démarrer sans `RESEND_API_KEY`.** Le SDK Resend lève une erreur dès l'import si la clé est absente. Une valeur factice suffit quand l'email n'est pas configuré.
-- **Le backend n'a pas besoin de la base pour démarrer** (à vérifier). Le pool `pg` ne se connecte qu'à la première requête, et `/health` n'interroge pas la base. `/health` répond donc 200 même base arrêtée : il prouve que le processus vit, pas que l'application fonctionne.
+- **Le backend refuse de démarrer sans `RESEND_API_KEY`** (vérifié). Le SDK Resend lève une erreur dès l'import si la clé est absente. Une valeur factice suffit quand l'email n'est pas configuré.
+- **Le backend n'a pas besoin de la base pour démarrer** (vérifié). Le pool `pg` ne se connecte qu'à la première requête, et `/health` n'interroge pas la base. `/health` répond donc 200 même base arrêtée : il prouve que le processus vit, pas que l'application fonctionne.
+
+Les deux points sont démontrés dans [`preuves/J1/diagnostic-demarrage-backend.md`](../../preuves/J1/diagnostic-demarrage-backend.md).
 
 ## 2. Ports
 
