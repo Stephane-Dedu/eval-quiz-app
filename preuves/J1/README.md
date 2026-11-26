@@ -10,6 +10,8 @@
 | Dockerfiles, `docker-compose.yml`, `.env.example` | Racine du dépôt, `backend/`, `database/` |
 | Parcours complet dans un navigateur | [Captures](#parcours-dans-le-navigateur) ci-dessous |
 
+**Écart assumé :** `docs/03` demande de faire valider J1 par le formateur avant le déploiement cloud. Le groupe a déployé sur Azure le 2026-11-26 sans attendre cette validation. Les preuves J1 complètes étaient déjà dans le dépôt depuis la [PR #5](https://github.com/Stephane-Dedu/eval-quiz-app/pull/5), fusionnée avant le premier déploiement.
+
 ## Démarrage depuis un clone vierge
 
 ```console

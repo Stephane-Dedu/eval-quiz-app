@@ -26,12 +26,6 @@ $ az acr show -n crquizsdedu --query '{sku:sku.name, adminUserEnabled:adminUserE
   "sku": "Basic"
 }
 
-$ az acr repository show-tags -n crquizsdedu --repository quiz-backend
-4eaf1123785bfb715c2e21cd91250f126ce4501c
-
-$ az acr repository show-tags -n crquizsdedu --repository quiz-frontend
-4eaf1123785bfb715c2e21cd91250f126ce4501c
-
 $ az role assignment list --scope <groupe, registre, identité> → rôles des identités
 id-quiz-pull	AcrPull	rg-quiz-gwc/Microsoft.ContainerRegistry/registries/crquizsdedu
 id-quiz-github	AcrPush	rg-quiz-gwc/Microsoft.ContainerRegistry/registries/crquizsdedu
@@ -52,25 +46,51 @@ $ az consumption budget (API) → budget-quiz
 
 - **Deux régions.** Le registre, les identités et les journaux sont en `germanywestcentral`. L'environnement Container Apps et les deux applications sont en `belgiumcentral`. Azure for Students n'autorise qu'un environnement par abonnement, et `germanywestcentral` est restée bloquée après la suppression d'un premier environnement en mode Express ([ADR 0005](../../docs/adr/0005-environnement-workload-profiles.md)).
 - **Registre sans compte administrateur** (`adminUserEnabled: false`). Les applications tirent les images avec l'identité `id-quiz-pull` (rôle `AcrPull`). Le CD publie avec `id-quiz-github` (rôle `AcrPush`), par OIDC.
-- **Tags identifiables.** Chaque image porte le SHA complet du commit qui l'a produite :
-  - `4eaf112…` : premier déploiement par `deploy.sh` ;
-  - `3f5ab0d…` : fusion de la [PR #11](https://github.com/Stephane-Dedu/eval-quiz-app/pull/11), publiée par le CD.
 
-## Un second passage ne recrée rien
+## Images taguées par le commit
 
-`deploy.sh` est rejouable : chaque ressource existante est laissée telle quelle ou remise dans l'état décrit, et la révision des applications ne change pas.
+Chaque image porte le SHA complet du commit qui l'a produite, du plus récent au plus ancien :
 
 ```console
-== Révisions avant
-ca-quiz-backend : ca-quiz-backend--0000003
-ca-quiz-frontend : ca-quiz-frontend--0000003
+$ az acr repository show-tags -n crquizsdedu --repository quiz-backend --orderby time_desc
+df88c2cab964e4392f0288588ff8b0516dd52a65
+1d38574f52cd9a7f316ba4fb6e08f1bb9b336de2
+05780a476cbbe32748d63ca3ca59cc14ee104388
+3f5ab0d0e960081f74ca10d4b113621699b6223b
+4eaf1123785bfb715c2e21cd91250f126ce4501c
+$ az acr repository show-tags -n crquizsdedu --repository quiz-frontend --orderby time_desc
+df88c2cab964e4392f0288588ff8b0516dd52a65
+1d38574f52cd9a7f316ba4fb6e08f1bb9b336de2
+05780a476cbbe32748d63ca3ca59cc14ee104388
+3f5ab0d0e960081f74ca10d4b113621699b6223b
+4eaf1123785bfb715c2e21cd91250f126ce4501c
+```
 
-$ ./scripts/deploy.sh      # second passage, rien n'a changé
+| Tag | Origine |
+| --- | --- |
+| `4eaf112…` | Premier déploiement par `deploy.sh` |
+| `3f5ab0d…` | CD, fusion de la [PR #11](https://github.com/Stephane-Dedu/eval-quiz-app/pull/11) |
+| `05780a4…` | CD, fusion de la [PR #12](https://github.com/Stephane-Dedu/eval-quiz-app/pull/12) |
+| `1d38574…` | CD, fusion de la [PR #13](https://github.com/Stephane-Dedu/eval-quiz-app/pull/13) (Question modifiée) |
+| `df88c2c…` | CD, fusion de la [PR #14](https://github.com/Stephane-Dedu/eval-quiz-app/pull/14), en production |
+
+## Un second passage ne change rien, et ne revient jamais en arrière
+
+`deploy.sh` est rejouable : chaque ressource existante est laissée telle quelle ou remise dans l'état décrit. Une application existante **garde son image** : seul le CD la fait évoluer ([ADR 0004](../../docs/adr/0004-cd-sans-secret-applicatif.md)). Passage après un déploiement du CD, depuis un poste dont le dépôt local a des modifications non commitées :
+
+```console
+== Avant (HEAD local : df88c2c, arbre modifié)
+ca-quiz-backend : ca-quiz-backend--0000006
+quiz-backend:df88c2cab964e4392f0288588ff8b0516dd52a65
+ca-quiz-frontend : ca-quiz-frontend--0000006
+quiz-frontend:df88c2cab964e4392f0288588ff8b0516dd52a65
+
+$ ./scripts/deploy.sh
 Déploiement de Quiz App
   abonnement   : Azure for Students
   région       : germanywestcentral (environnement Container Apps : belgiumcentral)
   groupe       : rg-quiz-gwc
-  tag d'image  : 3f5ab0d0e960081f74ca10d4b113621699b6223b
+  tag d'image  : df88c2cab964e4392f0288588ff8b0516dd52a65 (utilisé seulement pour créer une application)
 ▶ Fournisseurs de ressources
   Microsoft.App : enregistré
   Microsoft.ContainerRegistry : enregistré
@@ -98,25 +118,32 @@ Déploiement de Quiz App
   cae-quiz (mode WorkloadProfiles, trafic entre applications chiffré, blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io)
 ▶ Schéma PostgreSQL
   tables déjà présentes : init.sql n'est pas rejoué
-▶ Images (3f5ab0d0e960081f74ca10d4b113621699b6223b)
-  quiz-backend : déjà publiée (par la CI ou un déploiement précédent)
-  quiz-frontend : déjà publiée (par la CI ou un déploiement précédent)
+▶ Images
+  quiz-backend : application existante, image inchangée (crquizsdedu.azurecr.io/quiz-backend:df88c2cab964e4392f0288588ff8b0516dd52a65)
+  quiz-frontend : application existante, image inchangée (crquizsdedu.azurecr.io/quiz-frontend:df88c2cab964e4392f0288588ff8b0516dd52a65)
 ▶ Application backend
 ▶ Application frontend
 ▶ Vérification
   GET https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io/health → 200
-  ca-quiz-backend : révision ca-quiz-backend--0000003
-  ca-quiz-frontend : révision ca-quiz-frontend--0000003
+  ca-quiz-backend : révision ca-quiz-backend--0000006
+  ca-quiz-frontend : révision ca-quiz-frontend--0000006
 ✅ Déploiement terminé
   Application     : https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io
   Administration  : https://ca-quiz-frontend.blackriver-ff16d83f.belgiumcentral.azurecontainerapps.io/gestion-quiz
-  Images          : crquizsdedu.azurecr.io/quiz-{frontend,backend}:3f5ab0d0e960081f74ca10d4b113621699b6223b
+  Image backend   : crquizsdedu.azurecr.io/quiz-backend:df88c2cab964e4392f0288588ff8b0516dd52a65
+  Image frontend  : crquizsdedu.azurecr.io/quiz-frontend:df88c2cab964e4392f0288588ff8b0516dd52a65
 
-== Révisions après
-ca-quiz-backend : ca-quiz-backend--0000003
-ca-quiz-frontend : ca-quiz-frontend--0000003
+== Après
+ca-quiz-backend : ca-quiz-backend--0000006
+quiz-backend:df88c2cab964e4392f0288588ff8b0516dd52a65
+ca-quiz-frontend : ca-quiz-frontend--0000006
+quiz-frontend:df88c2cab964e4392f0288588ff8b0516dd52a65
 ```
+
+Aucune image construite, aucune image remplacée, aucune révision créée.
+
+**Pourquoi cette règle.** Dans sa première version, `deploy.sh` passait `--image <tag>` à chaque mise à jour. Relancé après un déploiement du CD, il a ramené la production à une image plus ancienne : c'est la révision `--0000002` de l'[historique](../J4/README.md#révisions), à 12:48, corrigée à la main à 12:52 (`--0000003`). Désormais, le tag d'image ne sert qu'à créer une application.
 
 ## Destruction
 
-`./scripts/destroy.sh` liste les ressources du groupe, demande de retaper son nom, supprime le budget puis le groupe entier. Le cycle complet `destroy.sh` puis `deploy.sh` est réservé à la fin du projet, après accord du formateur, comme le demande le sujet. Après la suppression d'un environnement, Azure for Students bloque la création d'un nouvel environnement pendant plusieurs dizaines de minutes : l'application serait indisponible tout ce temps.
+`./scripts/destroy.sh` liste les ressources du groupe, demande de retaper son nom, supprime le budget puis le groupe entier. Le cycle complet `destroy.sh` puis `deploy.sh` est réservé à la fin du projet, comme le demande le sujet. Après la suppression d'un environnement, Azure for Students bloque la création d'un nouvel environnement pendant plusieurs dizaines de minutes : l'application serait indisponible tout ce temps.

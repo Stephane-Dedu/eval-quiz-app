@@ -82,7 +82,7 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | ✅ | Connexion PostgreSQL chiffrée, schéma appliqué une seule fois | `sslmode` dans l'URL ; journal du script |
 | ✅ | Un **Participant** et un **Résultat** persistent après redémarrage | Preuve dans `preuves/J5/` |
 | ✅ | Alerte budgétaire en place | `az consumption budget list` |
-| ☐ | Bonus : la mise à l'échelle automatique répond à la charge | Test de charge, nombre de réplicas avant, pendant et après |
+| ✅ | Bonus : la mise à l'échelle automatique répond à la charge | `preuves/bonus` : 1 → 3 réplicas en 24 s, retour à 1 après le délai de réduction |
 | ☐ | Bonus : sous-domaine personnalisé avec certificat géré | `curl https://<sous-domaine>` |
 
 ## Infrastructure as code
@@ -101,7 +101,7 @@ Les exigences du sujet passent avant les bonnes pratiques ; tout écart volontai
 | ✓ | Contrôle | Vérification |
 | --- | --- | --- |
 | ✅ | Lancement local, déploiement, prérequis et nettoyage documentés | README |
-| ☐ | Schémas d'architecture locale et cloud | Mermaid dans la documentation, versions HTML/SVG dans `docs/diagrammes/` |
+| ✅ | Schémas d'architecture locale et cloud | Mermaid dans le README, `analyse-j1.md`, `conteneurisation.md` et `azure.md` |
 | ✅ | Preuves datées par **Jalon**, sans secret | `preuves/J0/` à `preuves/J6/` |
 | ✅ | Problèmes connus documentés | `docs/technique/problemes-connus.md` |
 | ✅ | Section « Usage de l'IA » | README |
