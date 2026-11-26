@@ -155,10 +155,15 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
-.env
-.env.*
-!.env.example
 
-node_modules/
-dist/
-*.log
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# macOS
+.DS_Store
