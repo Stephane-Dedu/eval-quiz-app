@@ -27,14 +27,10 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 FROM nginxinc/nginx-unprivileged:1.31.7-alpine3.24@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e AS runtime
 
-ARG REVISION=inconnue
-LABEL org.opencontainers.image.title="quiz-frontend" \
-      org.opencontainers.image.description="Quiz App : fichiers statiques et relais API (Nginx)" \
-      org.opencontainers.image.source="https://github.com/Stephane-Dedu/eval-quiz-app" \
-      org.opencontainers.image.revision="${REVISION}"
-
-# Valeur pour Docker Compose ; Azure Container Apps la remplace.
-ENV BACKEND_ORIGIN=http://backend:3007
+# Valeurs pour Docker Compose ; Azure Container Apps les remplace
+# (voir nginx/default.conf.template).
+ENV BACKEND_ORIGIN=http://backend:3007 \
+    TRUSTED_PROXY_CIDR=127.0.0.1/32
 
 # Correctifs de sécurité Alpine publiés depuis la construction de l'image de
 # base (elle date du 2026-10-19). Root le temps de l'installation, puis retour
@@ -43,9 +39,18 @@ USER 0
 RUN apk upgrade --no-cache
 USER 101
 
-COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY nginx/security-headers.conf nginx/proxy.conf /etc/nginx/snippets/
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Métadonnées en dernier : REVISION (SHA du commit) change à chaque build, et
+# Docker invalide le cache du premier RUN qui suit un ARG modifié. Placé ici,
+# il ne touche que ces métadonnées.
+ARG REVISION=inconnue
+LABEL org.opencontainers.image.title="quiz-frontend" \
+      org.opencontainers.image.description="Quiz App : fichiers statiques et relais API (Nginx)" \
+      org.opencontainers.image.source="https://github.com/Stephane-Dedu/eval-quiz-app" \
+      org.opencontainers.image.revision="${REVISION}"
 
 EXPOSE 8080
 
