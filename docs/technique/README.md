@@ -10,12 +10,13 @@ Documentation du groupe. Le sujet du formateur est dans `docs/00-sujet.md` (son 
 | [CI/CD](ci-cd.md) | Contrôles de PR, protection de `main`, déploiement continu, sécurité du dépôt |
 | [Azure](azure.md) | Architecture cloud, ressources, réseau, secrets, déploiement et destruction |
 | [Problèmes connus](problemes-connus.md) | Défauts du code fourni et leur traitement |
+| [Vitrine Terraform](../../infra/terraform/README.md) | Mêmes ressources en Terraform, correspondance avec `deploy.sh` |
 | [Décisions d'architecture](../adr/) | Les choix difficiles à défaire et leurs raisons |
 | [Vocabulaire](../../GLOSSARY.md) | Les termes du domaine et ceux à éviter |
 
 ## Feuille de route
 
-Chaque étape est une PR courte depuis une branche `feature/*` vers `main`, fusionnée en un seul commit.
+Chaque étape est une PR courte depuis une branche `feature/*` vers `main`, fusionnée en un seul commit. Le plan d'origine est conservé ; les numéros de PR réels sont dans [l'historique](https://github.com/Stephane-Dedu/eval-quiz-app/pulls?q=is%3Apr).
 
 | # | PR | Volet | Jalon |
 | --- | --- | --- | --- |
@@ -27,10 +28,10 @@ Chaque étape est une PR courte depuis une branche `feature/*` vers `main`, fusi
 | 6 | Contrôles de PR et protection de `main` | CI/CD | J6-A |
 | 7 | `deploy.sh`, `destroy.sh` et déploiement (lancé sans attendre la validation de J1 : écart noté dans `preuves/J1`) | Azure | J3, J4, J5 |
 | 8 | Déploiement continu et démonstration par modification d'une **Question** | CI/CD | J6-B |
-| 9 | Terraform, vérifié en CI et prouvé par un `apply` puis un `destroy` | Infrastructure as code | — |
+| 9 | Terraform, vérifié en CI et par un `plan` réel ; `apply` puis `destroy` après la soutenance | Infrastructure as code | — |
 | 10 | Schémas, documentation finale, README | Tous | Livrables |
-| 11 | Bonus : mise à l'échelle automatique, sous-domaine personnalisé | Azure | Bonus |
-| 12 | Support de soutenance (6 diapositives) | — | Soutenance |
+| 11 | Bonus : mise à l'échelle automatique (fait), sous-domaine personnalisé (en attente de l'attribution par le formateur) | Azure | Bonus |
+| 12 | Support de soutenance (6 diapositives) : `docs/soutenance/` | — | Soutenance |
 
 ## Conventions
 

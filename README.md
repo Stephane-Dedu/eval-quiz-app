@@ -85,6 +85,7 @@ Pull Requests : [toutes](https://github.com/Stephane-Dedu/eval-quiz-app/pulls?q=
 | [Problèmes connus](docs/technique/problemes-connus.md) | Défauts du code fourni et leur traitement |
 | [Décisions d'architecture](docs/adr/) | Choix structurants et leurs raisons |
 | [Vocabulaire](GLOSSARY.md) | Termes du domaine |
+| [Support de soutenance](docs/soutenance/soutenance.pdf) | 6 diapositives, avec notes de présentation dans le [.pptx](docs/soutenance/soutenance.pptx) |
 
 ## Usage de l'IA
 

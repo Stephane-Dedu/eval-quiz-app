@@ -21,6 +21,8 @@ Ruleset « Protection de main », **actif** (pas en mode évaluation), **sans au
 | Interdits | Suppression de `main`, force push, historique non linéaire |
 | Exceptions de contournement | Aucune, administrateur compris |
 
+Depuis la [PR #16](https://github.com/Stephane-Dedu/eval-quiz-app/pull/16), un sixième contrôle est requis : `Terraform (fmt, validate, tflint)`. Comme les cinq premiers, il a été ajouté après son premier passage réel. L'export ci-dessus reflète cet état ; les preuves qui suivent datent d'avant, avec cinq contrôles.
+
 Les noms des contrôles ont été relevés sur le premier passage réel de la CI (API `check-runs` du commit), pas devinés :
 
 ```console

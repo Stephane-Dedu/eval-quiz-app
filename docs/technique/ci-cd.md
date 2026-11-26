@@ -28,6 +28,7 @@ Déclenchée sur chaque PR vers `main`.
 | `Image backend (build et Trivy)` | Idem | Idem |
 | `Image db (build et Trivy)` | Idem | Idem |
 | `Intégration (Compose)` | La pile complète démarre avec les images scannées, puis `scripts/smoke-test.sh` | Un service ne devient pas sain, ou le parcours inscription → Résultat → lecture administrateur échoue |
+| `Terraform (fmt, validate, tflint)` | Formatage, validation et règles tflint (générales et Azure) du code `infra/terraform` | Code mal formaté, invalide, ou règle tflint enfreinte |
 
 ### Règles du workflow
 
@@ -50,7 +51,7 @@ Ruleset actif sur la branche par défaut, **sans aucune exception de contourneme
 | Règle | Effet |
 | --- | --- |
 | Pull request obligatoire | Aucun push direct sur `main` |
-| Contrôles requis | Les 5 contrôles ci-dessus, avec leurs noms relevés sur le premier passage réel ; la branche doit être à jour avec `main` |
+| Contrôles requis | Les 6 contrôles ci-dessus (le sixième, Terraform, depuis la PR #16), avec leurs noms relevés sur le premier passage réel ; la branche doit être à jour avec `main` |
 | Pas de suppression, pas de force push | L'historique de `main` ne peut pas être réécrit |
 | Historique linéaire | Fusion par squash uniquement : un commit par PR |
 

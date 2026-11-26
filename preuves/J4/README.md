@@ -22,7 +22,7 @@ Le mode WorkloadProfiles est indispensable : le mode Express, créé par défaut
 
 ## Applications : ingress, registre, identité
 
-État en production (image `df88c2c…`, révision `--0000006`) :
+État capturé à 13:30 UTC, juste après le déploiement de la PR #14 (image `df88c2c…`, révision `--0000006`). Chaque fusion suivante crée une nouvelle révision par le CD ([J6](../J6/README.md#j6-b--déploiement-après-fusion)).
 
 ```console
 $ az containerapp show -g rg-quiz-gwc -n ca-quiz-frontend --query '{…}'
@@ -119,7 +119,7 @@ ca-quiz-frontend--0000006  True      Running  quiz-frontend:df88c2cab964e4392f02
 | `--0000003` | Réparation manuelle, retour à l'image du CD |
 | `--0000004` | CD, PR #12 |
 | `--0000005` | CD, PR #13 : la **Question** modifiée ([démonstration](../J6/README.md#démonstration-complète--une-question-modifiée-de-la-branche-à-azure)) |
-| `--0000006` | CD, PR #14, en production |
+| `--0000006` | CD, PR #14 (dernière révision au moment de la capture) |
 
 En mode révision unique, seule la dernière révision est active ; les précédentes sont arrêtées.
 
