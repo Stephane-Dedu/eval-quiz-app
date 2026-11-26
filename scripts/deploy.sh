@@ -48,6 +48,9 @@ PULL_IDENTITY=${PULL_IDENTITY:-id-quiz-pull}
 CI_IDENTITY=${CI_IDENTITY:-id-quiz-github}
 GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-Stephane-Dedu/eval-quiz-app}
 GITHUB_ENVIRONMENT=${GITHUB_ENVIRONMENT:-production}
+# Préfixe du sujet des jetons OIDC de ce dépôt, identifiants immuables compris :
+#   gh api repos/<compte>/<dépôt>/actions/oidc/customization/sub --jq .sub_claim_prefix
+GITHUB_OIDC_SUBJECT_PREFIX=${GITHUB_OIDC_SUBJECT_PREFIX:-repo:Stephane-Dedu@105072484/eval-quiz-app@1472861267}
 MIN_REPLICAS=${MIN_REPLICAS:-0}
 MAX_REPLICAS=${MAX_REPLICAS:-3}
 HTTP_CONCURRENCY=${HTTP_CONCURRENCY:-20}
@@ -207,13 +210,23 @@ ensure_role "$CI_PRINCIPAL" "Container Apps Contributor" "$RG_ID"
 ensure_role "$CI_PRINCIPAL" "Managed Identity Operator" "$PULL_ID"
 
 step "Identifiant fédéré GitHub (OIDC)"
+# GitHub signe ses jetons avec un sujet fondé sur les identifiants immuables du
+# compte et du dépôt (repo:<compte>@<id>/<dépôt>@<id>:…). Un dépôt renommé, ou
+# supprimé puis recréé sous le même nom, n'obtient donc pas cette confiance.
 federated=github-$GITHUB_ENVIRONMENT
-exists az identity federated-credential show -g "$RESOURCE_GROUP" --identity-name "$CI_IDENTITY" -n "$federated" \
-  || az identity federated-credential create -g "$RESOURCE_GROUP" --identity-name "$CI_IDENTITY" -n "$federated" \
-    --issuer https://token.actions.githubusercontent.com \
-    --subject "repo:$GITHUB_REPOSITORY:environment:$GITHUB_ENVIRONMENT" \
+subject="$GITHUB_OIDC_SUBJECT_PREFIX:environment:$GITHUB_ENVIRONMENT"
+current=$(az identity federated-credential show -g "$RESOURCE_GROUP" --identity-name "$CI_IDENTITY" -n "$federated" \
+  --query subject -o tsv 2>/dev/null || true)
+if [[ -z $current ]]; then
+  az identity federated-credential create -g "$RESOURCE_GROUP" --identity-name "$CI_IDENTITY" -n "$federated" \
+    --issuer https://token.actions.githubusercontent.com --subject "$subject" \
     --audiences api://AzureADTokenExchange -o none
-info "seuls les workflows de $GITHUB_REPOSITORY dans l'environnement « $GITHUB_ENVIRONMENT » peuvent se connecter"
+elif [[ $current != "$subject" ]]; then
+  az identity federated-credential update -g "$RESOURCE_GROUP" --identity-name "$CI_IDENTITY" -n "$federated" \
+    --issuer https://token.actions.githubusercontent.com --subject "$subject" \
+    --audiences api://AzureADTokenExchange -o none
+fi
+info "sujet accepté : $subject"
 
 # --- 6. Environnement Container Apps ------------------------------------------
 
